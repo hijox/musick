@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Musick</string>
+    <string name="play_track">Play Track</string>
+    <string name="buzzer">BUZZER</string>
+    <string name="next">Next</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="start_game">Start Game</string>
+    <string name="hide_playlist_input">Hide Playlist Input</string>
+    <string name="enter_spotify_playlist_link">Enter Spotify Playlist Link</string>
+    <string name="reveal_song_info">Reveal Song Info</string>
+</resources>

@@ -1,0 +1,22 @@
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.Musick" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary and Secondary colors -->
+        <item name="colorPrimary">@color/spotify_green</item>
+        <item name="colorPrimaryVariant">@color/spotify_green</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/spotify_green</item>
+        <item name="colorSecondaryVariant">@color/spotify_green</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Background and surface colors -->
+        <item name="android:colorBackground">@color/spotify_black</item>
+        <item name="colorOnBackground">@color/white</item>
+        <item name="colorSurface">@color/spotify_dark_gray</item>
+        <item name="colorOnSurface">@color/white</item>
+
+        <!-- Error colors -->
+        <item name="colorError">@color/red</item>
+        <item name="colorOnError">@color/white</item>
+    </style>
+</resources>
