@@ -50,7 +50,7 @@
         android:id="@+id/generateNamesButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Generate Name Inputs"
+        android:text="set player names"
         android:backgroundTint="@color/spotify_green"
         android:textColor="@color/white"
         android:layout_marginTop="16dp"
