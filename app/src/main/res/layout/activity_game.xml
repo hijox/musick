@@ -8,130 +8,102 @@
     android:background="@color/spotify_black"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/currentPlayerText"
-        android:layout_width="wrap_content"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/currentPlayerCard"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Current Player: "
-        android:textColor="@color/white"
-        android:textSize="18sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
+        app:cardBackgroundColor="@color/spotify_green"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/currentPlayerText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:textColor="@color/spotify_black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="Current Player: Player 1" />
+    </androidx.cardview.widget.CardView>
 
     <TextView
         android:id="@+id/songInfoText"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
         android:text="Guess the song!"
         android:textColor="@color/white"
         android:textSize="24sp"
-        android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/currentPlayerText"
-        app:layout_constraintStart_toStartOf="parent"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:minHeight="72dp"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/currentPlayerCard" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/buzzerButton"
         android:layout_width="200dp"
         android:layout_height="200dp"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="@color/spotify_green"
         android:text="BUZZER"
         android:textSize="24sp"
-        android:backgroundTint="@color/spotify_green"
-        android:textColor="@color/white"
-        android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/songInfoText"
-        app:layout_constraintStart_toStartOf="parent"
+        app:cornerRadius="100dp"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
-
-    <Button
-        android:id="@+id/revealButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Reveal Song Info"
-        android:backgroundTint="@color/spotify_green"
-        android:textColor="@color/white"
-        android:visibility="gone"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/buzzerButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
+        app:layout_constraintTop_toBottomOf="@id/songInfoText" />
 
     <LinearLayout
-        android:id="@+id/scoreButtonsLayout"
-        android:layout_width="wrap_content"
+        android:id="@+id/gameControlsLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:orientation="horizontal"
-        android:visibility="gone"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/revealButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/buzzerButton">
 
-        <Button
-            android:id="@+id/correctTitleButton"
-            android:layout_width="wrap_content"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/leftButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Correct Title"
-            android:backgroundTint="@color/spotify_green"
-            android:textColor="@color/white"
-            android:layout_marginEnd="8dp"
-            tools:ignore="HardcodedText" />
+            android:layout_weight="1"
+            android:layout_marginEnd="0dp"
+            android:text="Skip"
+            app:cornerRadius="8dp" />
 
-        <Button
-            android:id="@+id/correctArtistButton"
-            android:layout_width="wrap_content"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/rightButton"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Correct Artist"
-            android:backgroundTint="@color/spotify_green"
-            android:textColor="@color/white"
-            tools:ignore="HardcodedText" />
+            android:layout_weight="1"
+            android:layout_marginStart="0dp"
+            android:text="Next Turn"
+            android:visibility="gone"
+            app:cornerRadius="8dp" />
+
     </LinearLayout>
-
-    <Button
-        android:id="@+id/nextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Next Turn"
-        android:backgroundTint="@color/spotify_green"
-        android:textColor="@color/white"
-        android:visibility="gone"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/scoreButtonsLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
 
     <TextView
         android:id="@+id/scoreText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Scores:"
-        android:textColor="@color/white"
-        android:textSize="18sp"
         android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/nextButton"
-        app:layout_constraintStart_toStartOf="parent"
+        android:text="Scores"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="HardcodedText" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/gameControlsLayout" />
 
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/playerScoresRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/scoreText"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <LinearLayout
-            android:id="@+id/playerScoresLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-    </ScrollView>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/scoreText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
