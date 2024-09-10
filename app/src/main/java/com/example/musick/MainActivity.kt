@@ -37,24 +37,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun connectToSpotify() {
-        val connectionParams = ConnectionParams.Builder(clientId)
-            .setRedirectUri(redirectUri)
-            .showAuthView(true)
-            .build()
+        try {
+            Log.d("MainActivity", "Attempting to connect to Spotify")
+            val connectionParams = ConnectionParams.Builder(clientId)
+                .setRedirectUri(redirectUri)
+                .showAuthView(true)
+                .build()
 
-        SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
-            override fun onConnected(appRemote: SpotifyAppRemote) {
-                spotifyAppRemote = appRemote
-                Log.d("MainActivity", "Connected to Spotify")
-                Toast.makeText(this@MainActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
-                startGameButton.isEnabled = true
-            }
+            SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
+                override fun onConnected(appRemote: SpotifyAppRemote) {
+                    spotifyAppRemote = appRemote
+                    Log.d("MainActivity", "Connected to Spotify")
+                    Toast.makeText(this@MainActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
+                    startGameButton.isEnabled = true
+                }
 
-            override fun onFailure(throwable: Throwable) {
-                Log.e("MainActivity", "Failed to connect to Spotify", throwable)
-                Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
-            }
-        })
+                override fun onFailure(throwable: Throwable) {
+                    Log.e("MainActivity", "Failed to connect to Spotify", throwable)
+                    Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Exception during Spotify connection attempt on Android ${android.os.Build.VERSION.RELEASE}", e)
+            Toast.makeText(this@MainActivity, "Error initiating Spotify connection: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+
     }
 
     private fun startGame() {

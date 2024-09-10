@@ -40,31 +40,19 @@
             android:id="@+id/playerCountInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter number of players"
+            android:hint="Number of players"
             android:inputType="number"
+            android:imeOptions="actionNext"
             android:textColor="@color/white" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/generateNamesButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="set player names"
-        android:backgroundTint="@color/spotify_green"
-        android:textColor="@color/white"
-        android:layout_marginTop="16dp"
-        app:cornerRadius="8dp"
-        app:layout_constraintTop_toBottomOf="@id/playerCountInputLayout"
-        app:layout_constraintStart_toStartOf="@id/playerCountInputLayout"
-        app:layout_constraintEnd_toEndOf="@id/playerCountInputLayout" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@id/generateNamesButton"
+        app:layout_constraintTop_toBottomOf="@id/playerCountInputLayout"
         app:layout_constraintBottom_toTopOf="@id/startGameButton"
         app:layout_constraintStart_toStartOf="@id/playerCountInputLayout"
         app:layout_constraintEnd_toEndOf="@id/playerCountInputLayout">

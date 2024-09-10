@@ -95,7 +95,10 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun playPlaylist(playlistId: String?) {
-        spotifyAppRemote?.playerApi?.play("spotify:playlist:$playlistId")
+        spotifyAppRemote?.playerApi?.let { playerApi ->
+            playerApi.play("spotify:playlist:$playlistId")
+            playerApi.setShuffle(true)
+        }
         subscribeToPlayerState()
     }
 
