@@ -8,4 +8,5 @@
     <string name="hide_playlist_input">Hide Playlist Input</string>
     <string name="enter_spotify_playlist_link">Enter Spotify Playlist Link</string>
     <string name="reveal_song_info">Reveal Song Info</string>
+    <string name="app_logo">App Logo</string>
 </resources>

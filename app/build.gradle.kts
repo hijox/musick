@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.auth)
+    //noinspection GradlePath
     implementation(files("D:/Users/nilsh/sdk_library/spotify-app-remote-release-0.8.0.aar"))
     implementation(libs.androidx.appcompat)
     implementation(libs.gson)
