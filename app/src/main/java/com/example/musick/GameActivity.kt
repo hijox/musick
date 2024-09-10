@@ -232,6 +232,19 @@ class PlayerScoreAdapter(
         holder.playerNameText.text = player
         holder.scoreText.text = score.toString()
 
+        // Find the highest score in the list
+        val maxScore = scores.values.maxOrNull() ?: 0
+
+        // Set score and player name color based on whether it's the highest score
+        if (score == maxScore && score > 0) {
+            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+        } else {
+            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.white))
+            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.white))
+        }
+
+        // Update score with button clicks
         holder.minusOneButton.setOnClickListener { onScoreChange(player, -1) }
         holder.plusOneButton.setOnClickListener { onScoreChange(player, 1) }
     }
