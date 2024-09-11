@@ -11,12 +11,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -47,7 +49,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var startGameButton: Button
     private lateinit var playlistHistoryRecyclerView: RecyclerView
     private lateinit var playlistHistoryAdapter: PlaylistHistoryAdapter
-    private lateinit var loginButton: Button
 
     private val playlistHistory = mutableListOf<PlaylistInfo>()
 
@@ -59,6 +60,12 @@ class MainActivity : AppCompatActivity() {
     private var refreshToken: String? = null
     private var tokenExpirationTime: Long = 0
 
+    private lateinit var loginContainer: FrameLayout
+    private lateinit var loginButton: MaterialButton
+    private lateinit var mainContent: ViewGroup
+    private lateinit var loginRequiredMessage: TextView
+    private lateinit var appDescriptionTextView: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -66,17 +73,23 @@ class MainActivity : AppCompatActivity() {
         playlistLinkInput = findViewById(R.id.playlistLinkInput)
         startGameButton = findViewById(R.id.startGameButton)
         playlistHistoryRecyclerView = findViewById(R.id.playlistHistoryRecyclerView)
+
+        loginContainer = findViewById(R.id.loginContainer)
         loginButton = findViewById(R.id.loginButton)
+        mainContent = findViewById(R.id.mainContent)
+        loginRequiredMessage = findViewById(R.id.loginRequiredMessage)
+        appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
 
         startGameButton.setOnClickListener { startGame() }
         loginButton.setOnClickListener { initiateSpotifyLogin() }
 
+        setupLoginScreen()
         loadPlaylistHistory()
         setupPlaylistHistoryRecyclerView()
         setupSpotifyApi()
 
         loadTokens()
-        updateLoginButtonVisibility()
+        checkAndRefreshToken()
     }
 
     override fun onResume() {
@@ -84,14 +97,39 @@ class MainActivity : AppCompatActivity() {
         checkAndRefreshToken()
     }
 
+    private fun setupLoginScreen() {
+        appDescriptionTextView.text = getString(R.string.app_description)
+        loginRequiredMessage.text = getString(R.string.login_required_message)
+    }
+
     private fun checkAndRefreshToken() {
-        if (refreshToken != null && System.currentTimeMillis() >= tokenExpirationTime) {
-            refreshAccessToken { success ->
-                if (success) {
-                    updateLoginButtonVisibility()
+        if (!isTokenValid()) {
+            if (refreshToken != null) {
+                refreshAccessToken { success ->
+                    runOnUiThread {
+                        if (success) {
+                            showMainContent()
+                        } else {
+                            showLoginRequired()
+                        }
+                    }
                 }
+            } else {
+                showLoginRequired()
             }
+        } else {
+            showMainContent()
         }
+    }
+
+    private fun showLoginRequired() {
+        loginContainer.visibility = View.VISIBLE
+        mainContent.visibility = View.GONE
+    }
+
+    private fun showMainContent() {
+        loginContainer.visibility = View.GONE
+        mainContent.visibility = View.VISIBLE
     }
 
     private fun setupSpotifyApi() {
@@ -120,7 +158,6 @@ class MainActivity : AppCompatActivity() {
         customTabsIntent.launchUrl(this, Uri.parse(authUrl))
     }
 
-    @Override
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleSpotifyCallback(intent)
@@ -135,6 +172,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 val error = uri.getQueryParameter("error")
                 Toast.makeText(this, "Authentication failed: $error", Toast.LENGTH_LONG).show()
+                showLoginRequired()
             }
         }
     }
@@ -167,14 +205,15 @@ class MainActivity : AppCompatActivity() {
                 tokenExpirationTime = System.currentTimeMillis() + tokenResponse.expiresIn * 1000
 
                 tokenResponse.refreshToken?.let {
-                    saveTokens(tokenResponse.accessToken,
-                        it, tokenResponse.expiresIn)
+                    saveTokens(tokenResponse.accessToken, it, tokenResponse.expiresIn)
                 }
-                updateLoginButtonVisibility()
+
+                showMainContent()
 
                 Toast.makeText(this@MainActivity, "Successfully logged in!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Failed to get access token: ${e.message}", Toast.LENGTH_LONG).show()
+                showLoginRequired()
             }
         }
     }
@@ -203,13 +242,11 @@ class MainActivity : AppCompatActivity() {
                 accessToken = tokenResponse.accessToken
                 tokenExpirationTime = System.currentTimeMillis() + tokenResponse.expiresIn * 1000
 
-                // Update the refresh token if a new one is provided
                 if (tokenResponse.refreshToken != null) {
                     refreshToken = tokenResponse.refreshToken
                 }
 
                 saveTokens(tokenResponse.accessToken, refreshToken ?: "", tokenResponse.expiresIn)
-                updateLoginButtonVisibility()
                 callback(true)
             } catch (e: Exception) {
                 Log.e("MainActivity", "Failed to refresh token: ${e.message}")
@@ -224,40 +261,35 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (System.currentTimeMillis() >= tokenExpirationTime) {
-            refreshAccessToken { success ->
-                if (success) {
-                    proceedWithStartGame()
-                } else {
-                    Toast.makeText(this, "Failed to refresh token. Please log in again.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        } else {
-            proceedWithStartGame()
-        }
-    }
-
-    private fun proceedWithStartGame() {
         val playlistLink = playlistLinkInput.text.toString()
         val playlistId = extractPlaylistId(playlistLink)
 
         if (playlistId != null) {
-            // Start PlayerSetupActivity immediately
-            val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
-            intent.putExtra("PLAYLIST_ID", playlistId)
-            startActivity(intent)
-
-            // Fetch playlist name asynchronously
-            coroutineScope.launch {
-                try {
-                    val playlistName = fetchPlaylistName(playlistId)
-                    addToPlaylistHistory(playlistId, playlistName, playlistLink)
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}")
-                }
-            }
+            startGameWithPlaylist(playlistId, playlistLink)
         } else {
             Toast.makeText(this, "Invalid Spotify playlist link", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun startGameWithPlaylist(playlistId: String, playlistLink: String) {
+        if (!isTokenValid()) {
+            checkAndRefreshToken()
+            return
+        }
+
+        // Start PlayerSetupActivity immediately
+        val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
+        intent.putExtra("PLAYLIST_ID", playlistId)
+        startActivity(intent)
+
+        // Fetch playlist name asynchronously
+        coroutineScope.launch {
+            try {
+                val playlistName = fetchPlaylistName(playlistId)
+                addToPlaylistHistory(playlistId, playlistName, playlistLink)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}")
+            }
         }
     }
 
@@ -278,18 +310,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateLoginButtonVisibility() {
-        if (isTokenValid()) {
-            loginButton.visibility = View.GONE
-            startGameButton.isEnabled = true
-        } else {
-            loginButton.visibility = View.VISIBLE
-            startGameButton.isEnabled = false
-        }
-    }
-
     private fun isTokenValid(): Boolean {
-        return accessToken != null && System.currentTimeMillis() < tokenExpirationTime || refreshToken != null
+        return accessToken != null && System.currentTimeMillis() < tokenExpirationTime
     }
 
     private suspend fun fetchPlaylistName(playlistId: String): String {
@@ -342,7 +364,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupPlaylistHistoryRecyclerView() {
         playlistHistoryAdapter = PlaylistHistoryAdapter(playlistHistory) { playlistInfo ->
-            playlistLinkInput.setText(playlistInfo.link)
+            startGameWithPlaylist(playlistInfo.id, playlistInfo.link)
         }
         playlistHistoryRecyclerView.layoutManager = LinearLayoutManager(this)
         playlistHistoryRecyclerView.adapter = playlistHistoryAdapter
