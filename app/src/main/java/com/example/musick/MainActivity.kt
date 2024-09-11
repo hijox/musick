@@ -79,6 +79,21 @@ class MainActivity : AppCompatActivity() {
         updateLoginButtonVisibility()
     }
 
+    override fun onResume() {
+        super.onResume()
+        checkAndRefreshToken()
+    }
+
+    private fun checkAndRefreshToken() {
+        if (refreshToken != null && System.currentTimeMillis() >= tokenExpirationTime) {
+            refreshAccessToken { success ->
+                if (success) {
+                    updateLoginButtonVisibility()
+                }
+            }
+        }
+    }
+
     private fun setupSpotifyApi() {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.spotify.com/v1/")
@@ -151,7 +166,10 @@ class MainActivity : AppCompatActivity() {
                 refreshToken = tokenResponse.refreshToken
                 tokenExpirationTime = System.currentTimeMillis() + tokenResponse.expiresIn * 1000
 
-                saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken, tokenResponse.expiresIn)
+                tokenResponse.refreshToken?.let {
+                    saveTokens(tokenResponse.accessToken,
+                        it, tokenResponse.expiresIn)
+                }
                 updateLoginButtonVisibility()
 
                 Toast.makeText(this@MainActivity, "Successfully logged in!", Toast.LENGTH_SHORT).show()
@@ -161,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshAccessToken() {
+    private fun refreshAccessToken(callback: (Boolean) -> Unit) {
         coroutineScope.launch {
             try {
                 val tokenResponse = withContext(Dispatchers.IO) {
@@ -185,38 +203,57 @@ class MainActivity : AppCompatActivity() {
                 accessToken = tokenResponse.accessToken
                 tokenExpirationTime = System.currentTimeMillis() + tokenResponse.expiresIn * 1000
 
+                // Update the refresh token if a new one is provided
+                if (tokenResponse.refreshToken != null) {
+                    refreshToken = tokenResponse.refreshToken
+                }
+
                 saveTokens(tokenResponse.accessToken, refreshToken ?: "", tokenResponse.expiresIn)
                 updateLoginButtonVisibility()
+                callback(true)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Failed to refresh token: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e("MainActivity", "Failed to refresh token: ${e.message}")
+                callback(false)
             }
         }
     }
 
     private fun startGame() {
         if (!isTokenValid()) {
-            if (refreshToken != null) {
-                refreshAccessToken()
-            } else {
-                Toast.makeText(this, "Please log in to Spotify first", Toast.LENGTH_SHORT).show()
-                return
-            }
+            Toast.makeText(this, "Please log in to Spotify first", Toast.LENGTH_SHORT).show()
+            return
         }
 
+        if (System.currentTimeMillis() >= tokenExpirationTime) {
+            refreshAccessToken { success ->
+                if (success) {
+                    proceedWithStartGame()
+                } else {
+                    Toast.makeText(this, "Failed to refresh token. Please log in again.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            proceedWithStartGame()
+        }
+    }
+
+    private fun proceedWithStartGame() {
         val playlistLink = playlistLinkInput.text.toString()
         val playlistId = extractPlaylistId(playlistLink)
 
         if (playlistId != null) {
+            // Start PlayerSetupActivity immediately
+            val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
+            intent.putExtra("PLAYLIST_ID", playlistId)
+            startActivity(intent)
+
+            // Fetch playlist name asynchronously
             coroutineScope.launch {
                 try {
                     val playlistName = fetchPlaylistName(playlistId)
                     addToPlaylistHistory(playlistId, playlistName, playlistLink)
-
-                    val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
-                    intent.putExtra("PLAYLIST_ID", playlistId)
-                    startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(this@MainActivity, "Failed to fetch playlist info: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}")
                 }
             }
         } else {
@@ -252,7 +289,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isTokenValid(): Boolean {
-        return accessToken != null && System.currentTimeMillis() < tokenExpirationTime
+        return accessToken != null && System.currentTimeMillis() < tokenExpirationTime || refreshToken != null
     }
 
     private suspend fun fetchPlaylistName(playlistId: String): String {
@@ -349,7 +386,7 @@ data class TokenResponse(
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("token_type") val tokenType: String,
     @SerializedName("expires_in") val expiresIn: Int,
-    @SerializedName("refresh_token") val refreshToken: String
+    @SerializedName("refresh_token") val refreshToken: String?
 )
 
 data class PlaylistInfo(val id: String, val name: String, val link: String)
