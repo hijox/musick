@@ -7,11 +7,31 @@
     android:background="@color/spotify_black"
     tools:context=".MainActivity">
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/loginButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/spotify_green"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:text="Login"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        app:cornerRadius="4dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageView
         android:id="@+id/logoImageView"
         android:layout_width="120dp"
         android:layout_height="120dp"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="80dp"
         android:src="@drawable/app_logo"
         app:layout_constraintBottom_toTopOf="@+id/titleTextView"
         app:layout_constraintEnd_toEndOf="parent"
@@ -41,6 +61,8 @@
         android:layout_marginStart="32dp"
         android:layout_marginTop="48dp"
         android:layout_marginEnd="32dp"
+        android:imeOptions="actionDone"
+        android:singleLine="true"
         app:hintTextColor="@color/gray"
         app:boxStrokeColor="@color/spotify_green"
         app:boxBackgroundColor="@color/dark_gray"
@@ -53,6 +75,8 @@
             android:id="@+id/playlistLinkInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
             android:hint="@string/enter_spotify_playlist_link"
             android:inputType="textUri"
             android:textColor="@color/white" />
@@ -74,6 +98,27 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/playlistLinkInputLayout" />
+
+    <TextView
+        android:id="@+id/historyTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Recent Playlists"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@id/startGameButton"
+        app:layout_constraintTop_toBottomOf="@id/startGameButton" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/playlistHistoryRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="@id/startGameButton"
+        app:layout_constraintStart_toStartOf="@id/startGameButton"
+        app:layout_constraintTop_toBottomOf="@id/historyTitle" />
 
     <WebView
         android:id="@+id/webView"

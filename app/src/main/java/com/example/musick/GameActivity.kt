@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -46,6 +47,30 @@ class GameActivity : AppCompatActivity() {
         connectToSpotify(playlistId)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (spotifyAppRemote?.isConnected != true) {
+            val playlistId = intent.getStringExtra("PLAYLIST_ID")
+            connectToSpotify(playlistId)
+        } else {
+            // Refresh the current song information
+            updateCurrentSongInfo()
+        }
+    }
+
+    private fun updateCurrentSongInfo() {
+        spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+            playerState.track?.let { track ->
+                currentTrack = track
+                if (isSongRevealed) {
+                    revealSongInfo()
+                } else {
+                    songInfoText.text = "Guess the song!"
+                }
+            }
+        }
+    }
+
     private fun initializeViews() {
         currentPlayerText = findViewById(R.id.currentPlayerText)
         songInfoText = findViewById(R.id.songInfoText)
@@ -85,11 +110,18 @@ class GameActivity : AppCompatActivity() {
         SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
             override fun onConnected(appRemote: SpotifyAppRemote) {
                 spotifyAppRemote = appRemote
-                playPlaylist(playlistId)
+                if (currentTrack == null) {
+                    playPlaylist(playlistId)
+                } else {
+                    subscribeToPlayerState()
+                    updateCurrentSongInfo()
+                }
             }
 
             override fun onFailure(throwable: Throwable) {
-                // Handle connection error
+                runOnUiThread {
+                    Toast.makeText(this@GameActivity, "Failed to connect to Spotify", Toast.LENGTH_SHORT).show()
+                }
             }
         })
     }
@@ -232,6 +264,19 @@ class PlayerScoreAdapter(
         holder.playerNameText.text = player
         holder.scoreText.text = score.toString()
 
+        // Find the highest score in the list
+        val maxScore = scores.values.maxOrNull() ?: 0
+
+        // Set score and player name color based on whether it's the highest score
+        if (score == maxScore && score > 0) {
+            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+        } else {
+            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.white))
+            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.white))
+        }
+
+        // Update score with button clicks
         holder.minusOneButton.setOnClickListener { onScoreChange(player, -1) }
         holder.plusOneButton.setOnClickListener { onScoreChange(player, 1) }
     }
