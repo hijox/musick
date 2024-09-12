@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainContent: ViewGroup
     private lateinit var loginRequiredMessage: TextView
     private lateinit var appDescriptionTextView: TextView
+    private lateinit var loadingIndicator: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         mainContent = findViewById(R.id.mainContent)
         loginRequiredMessage = findViewById(R.id.loginRequiredMessage)
         appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
 
         startGameButton.setOnClickListener { startGame() }
         loginButton.setOnClickListener { initiateSpotifyLogin() }
@@ -103,6 +106,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAndRefreshToken() {
+        showLoadingState()
         if (!isTokenValid()) {
             if (refreshToken != null) {
                 refreshAccessToken { success ->
@@ -122,14 +126,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showLoadingState() {
+        loginContainer.visibility = View.GONE
+        mainContent.visibility = View.GONE
+        loadingIndicator.visibility = View.VISIBLE
+    }
+
     private fun showLoginRequired() {
         loginContainer.visibility = View.VISIBLE
         mainContent.visibility = View.GONE
+        loadingIndicator.visibility = View.GONE
     }
 
     private fun showMainContent() {
         loginContainer.visibility = View.GONE
         mainContent.visibility = View.VISIBLE
+        loadingIndicator.visibility = View.GONE
     }
 
     private fun setupSpotifyApi() {
@@ -247,10 +259,14 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 saveTokens(tokenResponse.accessToken, refreshToken ?: "", tokenResponse.expiresIn)
-                callback(true)
+                withContext(Dispatchers.Main) {
+                    callback(true)
+                }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Failed to refresh token: ${e.message}")
-                callback(false)
+                withContext(Dispatchers.Main) {
+                    callback(false)
+                }
             }
         }
     }
