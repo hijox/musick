@@ -35,6 +35,10 @@ class GameActivity : AppCompatActivity() {
     private val clientId = "41fe6d48712c4f7095829a361119ea07"
     private val redirectUri = "com.example.musick://callback"
 
+    private var isInitializing = true
+    private var pendingPlaylistId: String? = null
+    private var isConnecting = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
@@ -43,17 +47,15 @@ class GameActivity : AppCompatActivity() {
         setupGame()
         setupListeners()
 
-        val playlistId = intent.getStringExtra("PLAYLIST_ID")
-        connectToSpotify(playlistId)
+        pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
+        connectToSpotify()
     }
 
     override fun onResume() {
         super.onResume()
-        if (spotifyAppRemote?.isConnected != true) {
-            val playlistId = intent.getStringExtra("PLAYLIST_ID")
-            connectToSpotify(playlistId)
-        } else {
-            // Refresh the current song information
+        if (spotifyAppRemote?.isConnected != true && !isConnecting) {
+            connectToSpotify()
+        } else if (spotifyAppRemote?.isConnected == true) {
             updateCurrentSongInfo()
         }
     }
@@ -101,7 +103,10 @@ class GameActivity : AppCompatActivity() {
         rightButton.setOnClickListener { handleRightButtonClick() }
     }
 
-    private fun connectToSpotify(playlistId: String?) {
+    private fun connectToSpotify() {
+        if (isConnecting) return
+
+        isConnecting = true
         val connectionParams = ConnectionParams.Builder(clientId)
             .setRedirectUri(redirectUri)
             .showAuthView(true)
@@ -110,8 +115,15 @@ class GameActivity : AppCompatActivity() {
         SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
             override fun onConnected(appRemote: SpotifyAppRemote) {
                 spotifyAppRemote = appRemote
-                if (currentTrack == null) {
-                    playPlaylist(playlistId)
+                isConnecting = false
+                runOnUiThread {
+                    Toast.makeText(this@GameActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
+                }
+                if (isInitializing && currentTrack == null) {
+                    isInitializing = false
+                    pendingPlaylistId?.let { playlistId ->
+                        playPlaylist(playlistId)
+                    }
                 } else {
                     subscribeToPlayerState()
                     updateCurrentSongInfo()
@@ -119,6 +131,7 @@ class GameActivity : AppCompatActivity() {
             }
 
             override fun onFailure(throwable: Throwable) {
+                isConnecting = false
                 runOnUiThread {
                     Toast.makeText(this@GameActivity, "Failed to connect to Spotify", Toast.LENGTH_SHORT).show()
                 }
@@ -126,12 +139,13 @@ class GameActivity : AppCompatActivity() {
         })
     }
 
-    private fun playPlaylist(playlistId: String?) {
+    private fun playPlaylist(playlistId: String) {
         spotifyAppRemote?.playerApi?.let { playerApi ->
-            playerApi.play("spotify:playlist:$playlistId")
             playerApi.setShuffle(true)
+            playerApi.play("spotify:playlist:$playlistId").setResultCallback {
+                subscribeToPlayerState()
+            }
         }
-        subscribeToPlayerState()
     }
 
     private fun subscribeToPlayerState() {
@@ -233,9 +247,8 @@ class GameActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        spotifyAppRemote?.let {
-            SpotifyAppRemote.disconnect(it)
-        }
+        SpotifyAppRemote.disconnect(spotifyAppRemote)
+        isInitializing = true
     }
 }
 

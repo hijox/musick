@@ -5,4 +5,7 @@
     <string name="start_game">Start Game</string>
     <string name="enter_spotify_playlist_link">Enter Spotify Playlist Link</string>
     <string name="app_logo">App Logo</string>
+    <string name="app_description">Test your music knowledge with friends using your favorite Spotify playlists!</string>
+    <string name="login_required_message">To start playing, please log in with your Spotify account.</string>
+    <string name="login_with_spotify">Login with Spotify</string>
 </resources>
