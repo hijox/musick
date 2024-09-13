@@ -51,7 +51,7 @@ class GameActivity : AppCompatActivity() {
         loadingIndicator = findViewById(R.id.loadingIndicator)
         pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
 
-        connectToSpotify()
+        connectToSpotify(load_animation=true)
         initializeViews()
         setupGame()
         setupListeners()
@@ -60,7 +60,7 @@ class GameActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (spotifyAppRemote?.isConnected != true && !isConnecting) {
-            connectToSpotify()
+            connectToSpotify(load_animation=false)
         } else if (spotifyAppRemote?.isConnected == true) {
             updateCurrentSongInfo()
         }
@@ -109,11 +109,13 @@ class GameActivity : AppCompatActivity() {
         rightButton.setOnClickListener { handleRightButtonClick() }
     }
 
-    private fun connectToSpotify() {
+    private fun connectToSpotify(load_animation: Boolean) {
         if (isConnecting) return
 
         isConnecting = true
-        showLoadingState()
+        if (load_animation) {
+            showLoadingState()
+        }
         val connectionParams = ConnectionParams.Builder(clientId)
             .setRedirectUri(redirectUri)
             .showAuthView(false)
@@ -123,7 +125,9 @@ class GameActivity : AppCompatActivity() {
             override fun onConnected(appRemote: SpotifyAppRemote) {
                 spotifyAppRemote = appRemote
                 isConnecting = false
-                showMainContent()
+                if (load_animation) {
+                    showMainContent()
+                }
                 runOnUiThread {
                     Toast.makeText(this@GameActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
                 }
