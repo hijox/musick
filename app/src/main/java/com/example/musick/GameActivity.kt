@@ -43,12 +43,11 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
+        pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
+        connectToSpotify()
         initializeViews()
         setupGame()
         setupListeners()
-
-        pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
-        connectToSpotify()
     }
 
     override fun onResume() {
@@ -109,7 +108,7 @@ class GameActivity : AppCompatActivity() {
         isConnecting = true
         val connectionParams = ConnectionParams.Builder(clientId)
             .setRedirectUri(redirectUri)
-            .showAuthView(true)
+            .showAuthView(false)
             .build()
 
         SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
