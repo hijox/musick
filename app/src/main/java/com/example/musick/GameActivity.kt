@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +33,9 @@ class GameActivity : AppCompatActivity() {
     private var isSongPaused = false
     private var isSongRevealed = false
 
+    private lateinit var mainContent: ViewGroup
+    private lateinit var loadingIndicator: ProgressBar
+
     private val clientId = "41fe6d48712c4f7095829a361119ea07"
     private val redirectUri = "com.example.musick://callback"
 
@@ -43,7 +47,10 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
+        mainContent = findViewById(R.id.mainContent)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
         pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
+
         connectToSpotify()
         initializeViews()
         setupGame()
@@ -106,6 +113,7 @@ class GameActivity : AppCompatActivity() {
         if (isConnecting) return
 
         isConnecting = true
+        showLoadingState()
         val connectionParams = ConnectionParams.Builder(clientId)
             .setRedirectUri(redirectUri)
             .showAuthView(false)
@@ -115,6 +123,7 @@ class GameActivity : AppCompatActivity() {
             override fun onConnected(appRemote: SpotifyAppRemote) {
                 spotifyAppRemote = appRemote
                 isConnecting = false
+                showMainContent()
                 runOnUiThread {
                     Toast.makeText(this@GameActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
                 }
@@ -242,6 +251,16 @@ class GameActivity : AppCompatActivity() {
     private fun updatePlayerScore(player: String, points: Int) {
         scores[player] = scores[player]!! + points
         playerScoresRecyclerView.adapter?.notifyDataSetChanged()
+    }
+
+    private fun showLoadingState() {
+        mainContent.visibility = View.GONE
+        loadingIndicator.visibility = View.VISIBLE
+    }
+
+    private fun showMainContent() {
+        mainContent.visibility = View.VISIBLE
+        loadingIndicator.visibility = View.GONE
     }
 
     override fun onStop() {
