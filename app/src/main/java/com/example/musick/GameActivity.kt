@@ -1,13 +1,24 @@
 package com.example.musick
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.content.Context
+import android.graphics.drawable.AnimationDrawable
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -15,6 +26,9 @@ import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.types.Track
+import com.spotify.protocol.types.ImageUri
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 
 class GameActivity : AppCompatActivity() {
 
@@ -24,6 +38,11 @@ class GameActivity : AppCompatActivity() {
     private lateinit var leftButton: MaterialButton
     private lateinit var rightButton: MaterialButton
     private lateinit var playerScoresRecyclerView: RecyclerView
+    private lateinit var songProgressBar: ProgressBar
+    private lateinit var albumArtworkImageView: ImageView
+    private lateinit var loadingIndicator: ProgressBar
+    private lateinit var mainContent: View
+    private lateinit var gradientBackground: View
 
     private var spotifyAppRemote: SpotifyAppRemote? = null
     private var currentTrack: Track? = null
@@ -33,8 +52,9 @@ class GameActivity : AppCompatActivity() {
     private var isSongPaused = false
     private var isSongRevealed = false
 
-    private lateinit var mainContent: ViewGroup
-    private lateinit var loadingIndicator: ProgressBar
+    private lateinit var pulseAnimatorSet: AnimatorSet
+    private lateinit var pulseAnimator: ValueAnimator
+    private lateinit var gradientAnimation: AnimationDrawable
 
     private val clientId = "41fe6d48712c4f7095829a361119ea07"
     private val redirectUri = "com.example.musick://callback"
@@ -47,20 +67,20 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
-        mainContent = findViewById(R.id.mainContent)
-        loadingIndicator = findViewById(R.id.loadingIndicator)
         pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
 
-        connectToSpotify(load_animation=true)
         initializeViews()
+        connectToSpotify(loadAnimation=true)
         setupGame()
         setupListeners()
+        createPulsatingEffect()
+        setPlaceholderAlbumArt()
     }
 
     override fun onResume() {
         super.onResume()
         if (spotifyAppRemote?.isConnected != true && !isConnecting) {
-            connectToSpotify(load_animation=false)
+            connectToSpotify(loadAnimation=false)
         } else if (spotifyAppRemote?.isConnected == true) {
             updateCurrentSongInfo()
         }
@@ -86,6 +106,11 @@ class GameActivity : AppCompatActivity() {
         leftButton = findViewById(R.id.leftButton)
         rightButton = findViewById(R.id.rightButton)
         playerScoresRecyclerView = findViewById(R.id.playerScoresRecyclerView)
+        songProgressBar = findViewById(R.id.songProgressBar)
+        albumArtworkImageView = findViewById(R.id.albumArtworkImageView)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
+        mainContent = findViewById(R.id.mainContent)
+        gradientBackground = findViewById(R.id.gradientBackground)
     }
 
     private fun setupGame() {
@@ -104,16 +129,23 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        buzzerButton.setOnClickListener { toggleBuzzer() }
-        leftButton.setOnClickListener { handleLeftButtonClick() }
-        rightButton.setOnClickListener { handleRightButtonClick() }
+        buzzerButton.setOnClickListener {
+            vibrator(100)
+            toggleBuzzer()
+        }
+        leftButton.setOnClickListener {
+            handleLeftButtonClick()
+        }
+        rightButton.setOnClickListener {
+            handleRightButtonClick()
+        }
     }
 
-    private fun connectToSpotify(load_animation: Boolean) {
+    private fun connectToSpotify(loadAnimation: Boolean) {
         if (isConnecting) return
 
         isConnecting = true
-        if (load_animation) {
+        if (loadAnimation) {
             showLoadingState()
         }
         val connectionParams = ConnectionParams.Builder(clientId)
@@ -125,8 +157,9 @@ class GameActivity : AppCompatActivity() {
             override fun onConnected(appRemote: SpotifyAppRemote) {
                 spotifyAppRemote = appRemote
                 isConnecting = false
-                if (load_animation) {
+                if (loadAnimation) {
                     showMainContent()
+                    startPulsatingEffect()
                 }
                 runOnUiThread {
                     Toast.makeText(this@GameActivity, "Connected to Spotify", Toast.LENGTH_SHORT).show()
@@ -139,6 +172,9 @@ class GameActivity : AppCompatActivity() {
                 } else {
                     subscribeToPlayerState()
                     updateCurrentSongInfo()
+                    if (!isSongPaused) {
+                        startPulsatingEffect()
+                    }
                 }
             }
 
@@ -176,9 +212,13 @@ class GameActivity : AppCompatActivity() {
             if (isSongPaused) {
                 spotifyAppRemote?.playerApi?.resume()
                 isSongPaused = false
+                startPulsatingEffect()
+                startProgressBarAnimation()
             } else {
                 spotifyAppRemote?.playerApi?.pause()
                 isSongPaused = true
+                stopPulsatingEffect()
+                stopProgressBarAnimation()
             }
             updateButtonStates()
         }
@@ -199,9 +239,27 @@ class GameActivity : AppCompatActivity() {
     private fun revealSongInfo() {
         currentTrack?.let { track ->
             songInfoText.text = "Song: ${track.name}\nArtist: ${track.artist.name}"
+            loadAlbumArtwork(track.imageUri)
         }
         isSongRevealed = true
         updateButtonStates()
+    }
+
+    private fun setPlaceholderAlbumArt() {
+        Glide.with(this)
+            .load(R.drawable.placeholder_album_art)
+            .into(albumArtworkImageView)
+    }
+
+    private fun loadAlbumArtwork(imageUri: ImageUri) {
+        spotifyAppRemote?.imagesApi?.getImage(imageUri)?.setResultCallback { bitmap ->
+            Glide.with(this)
+                .load(bitmap)
+                .placeholder(R.drawable.placeholder_album_art)
+                .error(R.drawable.placeholder_album_art)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(albumArtworkImageView)
+        }
     }
 
     private fun skipSong() {
@@ -213,6 +271,7 @@ class GameActivity : AppCompatActivity() {
         currentPlayerIndex = (currentPlayerIndex + 1) % playerNames.size
         updateCurrentPlayer()
         resetForNewSong()
+        startPulsatingEffect()
         spotifyAppRemote?.playerApi?.skipNext()
     }
 
@@ -236,18 +295,21 @@ class GameActivity : AppCompatActivity() {
                 rightButton.visibility = View.VISIBLE
                 rightButton.text = "Next Turn"
                 buzzerButton.text = "BUZZER"
+                buzzerButton.setBackgroundColor(ContextCompat.getColor(this, R.color.spotify_green))
             }
             isSongPaused -> {
                 buzzerButton.text = "RESUME"
                 leftButton.visibility = View.VISIBLE
                 leftButton.text = "Reveal"
                 rightButton.visibility = View.GONE
+                buzzerButton.setBackgroundColor(ContextCompat.getColor(this, R.color.spotify_orange))
             }
             else -> {
                 buzzerButton.text = "BUZZER"
                 leftButton.visibility = View.VISIBLE
                 leftButton.text = "Skip"
                 rightButton.visibility = View.GONE
+                buzzerButton.setBackgroundColor(ContextCompat.getColor(this, R.color.spotify_green))
             }
         }
     }
@@ -265,6 +327,43 @@ class GameActivity : AppCompatActivity() {
     private fun showMainContent() {
         mainContent.visibility = View.VISIBLE
         loadingIndicator.visibility = View.GONE
+    }
+
+    private fun createPulsatingEffect() {
+        pulseAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1000 // 1 second for the full animation cycle
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            addUpdateListener { animator ->
+                val animatedValue = animator.animatedValue as Float
+                val scale = 1f + (0.1f * animatedValue) // Scale from 1.0 to 1.1
+                buzzerButton.scaleX = scale
+                buzzerButton.scaleY = scale
+            }
+        }
+    }
+
+    private fun startPulsatingEffect() {
+        if (!pulseAnimator.isStarted) {
+            pulseAnimator.start()
+        }
+    }
+
+    private fun stopPulsatingEffect() {
+        pulseAnimator.cancel()
+        buzzerButton.scaleX = 1f
+        buzzerButton.scaleY = 1f
+    }
+
+    private fun startProgressBarAnimation() {
+        songProgressBar.visibility = View.VISIBLE
+        val animator = ObjectAnimator.ofInt(songProgressBar, "progress", 0, 100)
+        animator.duration = 30000 // Assuming 30 seconds for each song
+        animator.start()
+    }
+
+    private fun stopProgressBarAnimation() {
+        songProgressBar.clearAnimation()
     }
 
     override fun onStop() {
@@ -317,4 +416,29 @@ class PlayerScoreAdapter(
     }
 
     override fun getItemCount() = scores.size
+}
+
+fun Context.vibrator(durationMillis: Long = 50) {
+    when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            // For Android 12 (S) and above
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
+            val vibrator = vibratorManager.defaultVibrator
+            vibrator.vibrate(vibrationEffect)
+        }
+
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
+            // For Android 8.0 (Oreo) to Android 11 (R)
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
+            vibrator.vibrate(vibrationEffect)
+        }
+
+        else -> {
+            // For Android versions below Oreo (API level 26)
+            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            vibrator.vibrate(durationMillis)
+        }
+    }
 }
