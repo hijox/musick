@@ -3,6 +3,7 @@ package com.example.musick
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -89,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         coroutineScope.launch {
             try {
                 SpotifyManager.reconnectIfNeeded(this@MainActivity)
-                if (SpotifyManager.isTokenValid()) {
+                if (SpotifyManager.isTokenValid() && !SpotifyManager.isConnected()) {
                     connectToSpotify()
                 } else {
                     showLoginRequired()
@@ -210,6 +211,16 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             launchGameActivity(playlistId)
+
+            // Fetch playlist name asynchronously
+            coroutineScope.launch {
+                try {
+                    val playlistName = fetchPlaylistName(playlistId)
+                    addToPlaylistHistory(playlistId, playlistName, playlistLink)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}")
+                }
+            }
         }
     }
 
