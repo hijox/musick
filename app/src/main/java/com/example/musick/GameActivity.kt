@@ -19,6 +19,7 @@ import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.collection.LruCache
 import androidx.core.animation.doOnCancel
@@ -38,6 +39,10 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.musick.SpotifyManager.spotifyAppRemote
 import com.google.android.material.imageview.ShapeableImageView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class GameActivity : AppCompatActivity() {
 
@@ -64,9 +69,15 @@ class GameActivity : AppCompatActivity() {
     private var currentProgress: Long = 0
     private var lastRotation: Float = 0f
 
+    private lateinit var loadingOverlay: View
+    private lateinit var loadingProgressBar: ProgressBar
+    private lateinit var loadingText: TextView
+
     private var pendingPlaylistId: String? = null
 
     private var albumArtCache = mutableMapOf<ImageUri, Bitmap>()
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,27 +86,37 @@ class GameActivity : AppCompatActivity() {
         pendingPlaylistId = intent.getStringExtra("PLAYLIST_ID")
 
         initializeViews()
-        if (!SpotifyManager.isConnected()) {
-            SpotifyManager.connectToSpotifyAppRemote(this)
-        }
-        setupGame()
         setupListeners()
         setupProgressAnimator()
         setupSpinningAnimation()
-        pendingPlaylistId?.let { playlistId ->
-            playPlaylist(playlistId)
-        }
+
+        showLoading("Connecting to Spotify")
+        ensureSpotifyConnection()
     }
 
     override fun onResume() {
         super.onResume()
+        // Reconnect to Spotify App if needed
         if (!SpotifyManager.isConnected()) {
-            SpotifyManager.connectToSpotifyAppRemote(this)
-        }
-        getTrackInfos { track, _, albumCoverImageUri, _ ->
-            currentTrack = track
-            preloadAlbumArtwork(albumCoverImageUri)
-            updateProgressBar()
+            coroutineScope.launch {
+                if (!SpotifyManager.isConnected()) {
+                    val connected = SpotifyManager.connectToSpotifyAppRemote(this@GameActivity)
+                    if (!connected) {
+                        Toast.makeText(
+                            this@GameActivity,
+                            "Failed to connect to Spotify",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finish()
+                        return@launch
+                    }
+                }
+                getTrackInfos { track, _, albumCoverImageUri, _ ->
+                    currentTrack = track
+                    preloadAlbumArtwork(albumCoverImageUri)
+                    updateProgressBar()
+                }
+            }
         }
     }
 
@@ -110,6 +131,27 @@ class GameActivity : AppCompatActivity() {
         skipButton = findViewById(R.id.skipButton)
         playerScoresRecyclerView = findViewById(R.id.playerScoresRecyclerView)
         songProgressBar = findViewById(R.id.songProgressBar)
+        loadingOverlay = findViewById(R.id.loadingOverlay)
+        loadingProgressBar = findViewById(R.id.loadingProgressBar)
+        loadingText = findViewById(R.id.loadingText)
+    }
+
+    private fun ensureSpotifyConnection() {
+        coroutineScope.launch {
+            if (!SpotifyManager.isConnected()) {
+                val connected = SpotifyManager.connectToSpotifyAppRemote(this@GameActivity)
+                if (!connected) {
+                    Toast.makeText(this@GameActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
+                    finish()
+                    return@launch
+                }
+            }
+            setupGame()
+            pendingPlaylistId?.let { playlistId ->
+                playPlaylist(playlistId)
+            }
+            hideLoading()
+        }
     }
 
     private fun setupGame() {
@@ -420,6 +462,15 @@ class GameActivity : AppCompatActivity() {
         progressAnimator.cancel()
         songProgressBar.progress = 0
         currentProgress = 0
+    }
+
+    private fun showLoading(message: String) {
+        loadingText.text = message
+        loadingOverlay.visibility = View.VISIBLE
+    }
+
+    private fun hideLoading() {
+        loadingOverlay.visibility = View.GONE
     }
 
     override fun onStop() {

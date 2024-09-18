@@ -10,12 +10,14 @@ import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.security.MessageDigest
 import java.security.SecureRandom
+import kotlin.coroutines.resume
 
 object SpotifyManager {
     private const val CLIENT_ID = "41fe6d48712c4f7095829a361119ea07"
@@ -115,22 +117,33 @@ object SpotifyManager {
         saveTokens(context, tokenResponse)
     }
 
-    fun connectToSpotifyAppRemote(context: Context) {
+    suspend fun connectToSpotifyAppRemote(context: Context): Boolean = withContext(Dispatchers.Main) {
+        if (isConnected()) return@withContext true
+
         val connectionParams = ConnectionParams.Builder(CLIENT_ID)
             .setRedirectUri(REDIRECT_URI)
             .showAuthView(false)
             .build()
 
-        SpotifyAppRemote.connect(context, connectionParams, object : Connector.ConnectionListener {
-            override fun onConnected(appRemote: SpotifyAppRemote) {
-                spotifyAppRemote = appRemote
-                Log.d("SpotifyManager", "Connected to Spotify App Remote")
-            }
+        try {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                SpotifyAppRemote.connect(context, connectionParams, object : Connector.ConnectionListener {
+                    override fun onConnected(appRemote: SpotifyAppRemote) {
+                        spotifyAppRemote = appRemote
+                        Log.d("SpotifyManager", "Connected to Spotify App Remote")
+                        continuation.resume(true)
+                    }
 
-            override fun onFailure(throwable: Throwable) {
-                Log.e("SpotifyManager", "Failed to connect to Spotify App Remote", throwable)
+                    override fun onFailure(throwable: Throwable) {
+                        Log.e("SpotifyManager", "Failed to connect to Spotify App Remote", throwable)
+                        continuation.resume(false)
+                    }
+                })
             }
-        })
+        } catch (e: Exception) {
+            Log.e("SpotifyManager", "Exception during Spotify App Remote connection", e)
+            false
+        }
     }
 
     private fun saveTokens(context: Context, tokenResponse: TokenResponse) {
@@ -167,13 +180,6 @@ object SpotifyManager {
 
     fun disconnectSpotifyAppRemote() {
         SpotifyAppRemote.disconnect(spotifyAppRemote)
-    }
-
-    fun getSpotifyAppRemote(context: Context): SpotifyAppRemote? {
-        if (!isConnected()) {
-            connectToSpotifyAppRemote(context)
-        }
-        return spotifyAppRemote
     }
 
     fun getAccessToken(): String? = accessToken

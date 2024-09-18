@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loginRequiredMessage: TextView
     private lateinit var appDescriptionTextView: TextView
     private lateinit var loadingIndicator: ProgressBar
+    private lateinit var loadingStatusText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +54,6 @@ class MainActivity : AppCompatActivity() {
 
         SpotifyManager.loadTokens(this)
         checkAndRefreshToken()
-        SpotifyManager.connectToSpotifyAppRemote(this)
     }
 
     override fun onResume() {
@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity() {
         loginRequiredMessage = findViewById(R.id.loginRequiredMessage)
         appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
         loadingIndicator = findViewById(R.id.loadingIndicator)
+        loadingStatusText = findViewById(R.id.loadingStatusText)
     }
 
     private fun setupClickListeners() {
@@ -88,18 +89,26 @@ class MainActivity : AppCompatActivity() {
         coroutineScope.launch {
             try {
                 SpotifyManager.reconnectIfNeeded(this@MainActivity)
-                withContext(Dispatchers.Main) {
-                    if (SpotifyManager.isTokenValid()) {
-                        showMainContent()
-                    } else {
-                        showLoginRequired()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Failed to reconnect: ${e.message}", Toast.LENGTH_LONG).show()
+                if (SpotifyManager.isTokenValid()) {
+                    connectToSpotify()
+                } else {
                     showLoginRequired()
                 }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to reconnect: ${e.message}", Toast.LENGTH_LONG).show()
+                showLoginRequired()
+            }
+        }
+    }
+
+    private fun connectToSpotify() {
+        coroutineScope.launch {
+            val connected = SpotifyManager.connectToSpotifyAppRemote(this@MainActivity)
+            if (connected) {
+                showMainContent()
+            } else {
+                Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
+                showLoginRequired()
             }
         }
     }
@@ -108,18 +117,21 @@ class MainActivity : AppCompatActivity() {
         loginContainer.visibility = View.GONE
         mainContent.visibility = View.GONE
         loadingIndicator.visibility = View.VISIBLE
+        loadingStatusText.visibility = View.VISIBLE
     }
 
     private fun showLoginRequired() {
         loginContainer.visibility = View.VISIBLE
         mainContent.visibility = View.GONE
         loadingIndicator.visibility = View.GONE
+        loadingStatusText.visibility = View.GONE
     }
 
     private fun showMainContent() {
         loginContainer.visibility = View.GONE
         mainContent.visibility = View.VISIBLE
         loadingIndicator.visibility = View.GONE
+        loadingStatusText.visibility = View.GONE
     }
 
     private fun initiateSpotifyLogin() {
@@ -152,6 +164,7 @@ class MainActivity : AppCompatActivity() {
         coroutineScope.launch {
             try {
                 SpotifyManager.handleAuthorizationResponse(code, this@MainActivity)
+                connectToSpotify()
                 showMainContent()
                 Toast.makeText(this@MainActivity, "Successfully logged in!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
@@ -183,20 +196,27 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Start PlayerSetupActivity immediately
+        if (!SpotifyManager.isConnected()) {
+            Toast.makeText(this, "Connecting to Spotify", Toast.LENGTH_SHORT).show()
+            coroutineScope.launch {
+                showLoadingState()
+                val connected = SpotifyManager.connectToSpotifyAppRemote(this@MainActivity)
+                if (connected) {
+                    launchGameActivity(playlistId)
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
+                    showLoginRequired()
+                }
+            }
+        } else {
+            launchGameActivity(playlistId)
+        }
+    }
+
+    private fun launchGameActivity(playlistId: String) {
         val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
         intent.putExtra("PLAYLIST_ID", playlistId)
         startActivity(intent)
-
-        // Fetch playlist name
-        coroutineScope.launch {
-            try {
-                val playlistName = fetchPlaylistName(playlistId)
-                addToPlaylistHistory(playlistId, playlistName, playlistLink)
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Failed to get Playlist Name", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     private suspend fun fetchPlaylistName(playlistId: String): String {
