@@ -5,4 +5,12 @@
         <item name="android:backgroundTint">@color/spotify_green</item>
         <item name="android:textColorHint">@color/gray</item>
     </style>
+    <style name="roundedImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="CircularImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/spotify_black"
+    android:background="@drawable/gradient_3"
     tools:context=".PlayerSetupActivity">
 
     <TextView
@@ -69,7 +69,9 @@
         android:id="@+id/startGameButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Start Game"
+        android:padding="16dp"
+        android:text="PLAY"
+        android:textSize="18sp"
         android:backgroundTint="@color/spotify_green"
         android:textColor="@color/white"
         android:layout_marginBottom="32dp"
