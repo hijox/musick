@@ -5,9 +5,10 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -16,33 +17,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
-import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.collection.LruCache
 import androidx.core.animation.doOnCancel
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnPause
 import androidx.core.animation.doOnResume
 import androidx.core.animation.doOnStart
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.spotify.protocol.types.Track
 import com.spotify.protocol.types.ImageUri
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.example.musick.SpotifyManager.spotifyAppRemote
 import com.google.android.material.imageview.ShapeableImageView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class GameActivity : AppCompatActivity() {
 
@@ -55,7 +48,6 @@ class GameActivity : AppCompatActivity() {
     private lateinit var controlButton: MaterialButton
     private lateinit var skipButton: MaterialButton
     private lateinit var playerScoresRecyclerView: RecyclerView
-    private lateinit var songProgressBar: ProgressBar
 
     private var currentTrack: Track? = null
     private var currentPlayerIndex = 0
@@ -65,9 +57,10 @@ class GameActivity : AppCompatActivity() {
     private var isSongRevealed = false
 
     private lateinit var spinningAnimator: ValueAnimator
-    private lateinit var progressAnimator: ObjectAnimator
-    private var currentProgress: Long = 0
     private var lastRotation: Float = 0f
+
+    private lateinit var songProgressBar: ProgressBar
+    private var isProgressBarUpdating = false
 
     private lateinit var loadingOverlay: View
     private lateinit var loadingProgressBar: ProgressBar
@@ -87,7 +80,7 @@ class GameActivity : AppCompatActivity() {
 
         initializeViews()
         setupListeners()
-        setupProgressAnimator()
+        setupProgressBar()
         setupSpinningAnimation()
 
         showLoading("Connecting to Spotify")
@@ -111,10 +104,10 @@ class GameActivity : AppCompatActivity() {
                         return@launch
                     }
                 }
-                getTrackInfos { track, _, albumCoverImageUri, _ ->
-                    currentTrack = track
+                startProgressBarUpdate()
+
+                getTrackInfos { _, _, albumCoverImageUri, _ ->
                     preloadAlbumArtwork(albumCoverImageUri)
-                    updateProgressBar()
                 }
             }
         }
@@ -182,42 +175,10 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpinningAnimation() {
-        spinningAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-            duration = 3000 // 3 seconds for a full rotation
-            repeatCount = ValueAnimator.INFINITE
-            interpolator = LinearInterpolator()
-            addUpdateListener { animator ->
-                val rotation = animator.animatedValue as Float
-                buzzerButton.rotation = rotation
-                lastRotation = rotation
-            }
-            doOnPause {
-                // Store the current rotation when paused
-                lastRotation = buzzerButton.rotation
-            }
-            doOnResume {
-                // Start from the last rotation when resumed
-                setFloatValues(lastRotation, lastRotation + 360f)
-            }
-            doOnCancel {
-                buzzerButton.rotation = 0f
-            }
-            doOnEnd {
-                buzzerButton.rotation = 0f
-            }
-        }
-    }
-
-    private fun setupProgressAnimator() {
-        progressAnimator = ObjectAnimator.ofInt(songProgressBar, "progress", 0, 100).apply {
-            duration = 30000 // Default duration, will be updated with actual track length
-        }
-    }
-
     private fun getTrackInfos(callback: (Track?, String, ImageUri?, Long) -> Unit) {
         spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
             val track = playerState.track
+            currentTrack = track
             val artistName = track?.artist?.name ?: ""
             val albumCoverImageUri = track?.imageUri
             val progress = playerState.playbackPosition
@@ -233,11 +194,10 @@ class GameActivity : AppCompatActivity() {
         isSongPaused = false
         startSpinningAnimation()
         updateButtonStates()
+        startProgressBarUpdate()
 
-        getTrackInfos { track, _, albumCoverImageUri, _ ->
-            currentTrack = track
+        getTrackInfos { _, _, albumCoverImageUri, _ ->
             preloadAlbumArtwork(albumCoverImageUri)
-            updateProgressBar()
         }
     }
 
@@ -246,7 +206,7 @@ class GameActivity : AppCompatActivity() {
         isSongPaused = true
         pauseSpinningAnimation()
         updateButtonStates()
-        progressAnimator.pause()
+        stopProgressBarUpdate()
     }
 
     private fun playPlaylist(playlistId: String) {
@@ -366,8 +326,9 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun skipSong() {
-        spotifyAppRemote?.playerApi?.skipNext()
         resetForNewSong()
+        spotifyAppRemote?.playerApi?.skipNext()
+        startSong()
     }
 
     private fun nextTurn() {
@@ -392,7 +353,7 @@ class GameActivity : AppCompatActivity() {
         // Clear albumArtCache
         albumArtCache.clear()
         updateButtonStates()
-        resetProgressBar()
+        stopProgressBarUpdate()
     }
 
     private fun updateButtonStates() {
@@ -426,9 +387,36 @@ class GameActivity : AppCompatActivity() {
         playerScoresRecyclerView.adapter?.notifyDataSetChanged()
     }
 
+    private fun setupSpinningAnimation() {
+        spinningAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
+            duration = 3000 // 3 seconds for a full rotation
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = LinearInterpolator()
+            addUpdateListener { animator ->
+                val rotation = animator.animatedValue as Float
+                buzzerButton.rotation = rotation
+                lastRotation = rotation
+            }
+            doOnPause {
+                // Store the current rotation when paused
+                lastRotation = buzzerButton.rotation
+            }
+            doOnResume {
+                // Start from the last rotation when resumed
+                setFloatValues(lastRotation, lastRotation + 360f)
+            }
+            doOnCancel {
+                buzzerButton.rotation = 0f
+            }
+            doOnEnd {
+                buzzerButton.rotation = 0f
+            }
+        }
+    }
+
     private fun startSpinningAnimation() {
         try {
-            if (spinningAnimator.isPaused == true) {
+            if (spinningAnimator.isPaused) {
                 spinningAnimator.resume()
             } else {
                 spinningAnimator.start()
@@ -446,22 +434,46 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateProgressBar() {
-        getTrackInfos { track, _, _, progress ->
-            currentTrack = track
-            val duration = track?.duration ?: 30000
-            progressAnimator.duration = duration
-            progressAnimator.setCurrentFraction(progress.toFloat() / duration)
-            if (!isSongPaused) {
-                progressAnimator.start()
-            }
+    private fun setupProgressBar() {
+        songProgressBar = findViewById(R.id.songProgressBar)
+        songProgressBar.max = 1000 // Using 1000 steps for smoother animation
+    }
+
+    private fun startProgressBarUpdate() {
+        if (!isProgressBarUpdating) {
+            isProgressBarUpdating = true
+            updateProgressBar()
         }
     }
 
+    private fun stopProgressBarUpdate() {
+        isProgressBarUpdating = false
+    }
+
+    private fun updateProgressBar() {
+        if (!isProgressBarUpdating) return
+
+        spotifyAppRemote?.playerApi?.subscribeToPlayerState()?.setEventCallback { playerState ->
+            val track = playerState.track
+            if (track != null) {
+                val songDuration = track.duration
+                val currentProgress = playerState.playbackPosition
+                val progress = ((currentProgress.toFloat() / songDuration.toFloat()) * 1000).toInt()
+                runOnUiThread {
+                    songProgressBar.progress = progress
+                }
+            }
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            updateProgressBar()
+        }, 1000) // Update every second
+    }
+
     private fun resetProgressBar() {
-        progressAnimator.cancel()
-        songProgressBar.progress = 0
-        currentProgress = 0
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
     }
 
     private fun showLoading(message: String) {
@@ -475,7 +487,15 @@ class GameActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        stopProgressBarUpdate()
         SpotifyManager.disconnectSpotifyAppRemote()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopProgressBarUpdate()
+        SpotifyManager.disconnectSpotifyAppRemote()
+        albumArtCache.clear()
     }
 }
 
