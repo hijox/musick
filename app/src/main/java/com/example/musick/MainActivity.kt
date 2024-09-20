@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         coroutineScope.launch {
             try {
                 SpotifyManager.reconnectIfNeeded(this@MainActivity)
-                if (SpotifyManager.isTokenValid() && !SpotifyManager.isConnected()) {
+                if (SpotifyManager.isTokenValid()) {
                     connectToSpotify()
                 } else {
                     showLoginRequired()

@@ -44,10 +44,12 @@ class GameActivity : AppCompatActivity() {
     private lateinit var songNameText: TextView
     private lateinit var artistNameText: TextView
     private lateinit var albumArtworkImageView: ShapeableImageView
-    private lateinit var buzzerButton: ShapeableImageView
     private lateinit var controlButton: MaterialButton
     private lateinit var skipButton: MaterialButton
     private lateinit var playerScoresRecyclerView: RecyclerView
+    private lateinit var buzzerButton: ShapeableImageView
+    private lateinit var playIcon: ShapeableImageView
+    private lateinit var pauseIcon: ShapeableImageView
 
     private var currentTrack: Track? = null
     private var currentPlayerIndex = 0
@@ -116,6 +118,8 @@ class GameActivity : AppCompatActivity() {
     private fun initializeViews() {
         currentPlayerText = findViewById(R.id.currentPlayerText)
         buzzerButton = findViewById(R.id.buzzerButton)
+        playIcon = findViewById(R.id.playIcon)
+        pauseIcon = findViewById(R.id.pauseIcon)
         albumArtworkImageView = findViewById(R.id.albumArtworkImageView)
         guessSongText = findViewById(R.id.guessSongText)
         songNameText = findViewById(R.id.songNameText)
@@ -165,7 +169,11 @@ class GameActivity : AppCompatActivity() {
     private fun setupListeners() {
         buzzerButton.setOnClickListener {
             vibrate(100)
-            toggleBuzzer()
+            handleBuzzerButtonClick()
+        }
+        albumArtworkImageView.setOnClickListener {
+            vibrate(100)
+            handleAlbumCoverClick()
         }
         controlButton.setOnClickListener {
             handleControlButtonClick()
@@ -192,6 +200,8 @@ class GameActivity : AppCompatActivity() {
             spotifyAppRemote?.playerApi?.resume()
         }
         isSongPaused = false
+        pauseIcon.visibility = View.VISIBLE
+        playIcon.visibility = View.GONE
         startSpinningAnimation()
         updateButtonStates()
         startProgressBarUpdate()
@@ -204,6 +214,8 @@ class GameActivity : AppCompatActivity() {
     private fun pauseSong() {
         spotifyAppRemote?.playerApi?.pause()
         isSongPaused = true
+        pauseIcon.visibility = View.GONE
+        playIcon.visibility = View.VISIBLE
         pauseSpinningAnimation()
         updateButtonStates()
         stopProgressBarUpdate()
@@ -217,7 +229,7 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun toggleBuzzer() {
+    private fun handleBuzzerButtonClick() {
         if (!isSongRevealed) {
             if (isSongPaused) {
                 startSong()
@@ -227,10 +239,14 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleControlButtonClick() {
+    private fun handleAlbumCoverClick() {
         if (isSongRevealed) {
             nextTurn()
-        } else if (isSongPaused) {
+        }
+    }
+
+    private fun handleControlButtonClick() {
+        if (isSongPaused) {
             revealSongInfo()
         }
     }
@@ -361,14 +377,13 @@ class GameActivity : AppCompatActivity() {
 
         when {
             isSongRevealed -> {
-                controlButton.visibility = View.VISIBLE
+                controlButton.visibility = View.INVISIBLE
                 albumArtworkImageView.visibility = View.VISIBLE
-                controlButton.text = "Next Turn"
                 skipButton.isEnabled = false
             }
             isSongPaused -> {
                 controlButton.visibility = View.VISIBLE
-                controlButton.text = "Reveal Song"
+                controlButton.text = "Reveal"
                 albumArtworkImageView.visibility = View.GONE
                 skipButton.isEnabled = false
                 pauseSpinningAnimation()
