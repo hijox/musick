@@ -23,8 +23,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnCancel
 import androidx.core.animation.doOnEnd
-import androidx.core.animation.doOnPause
-import androidx.core.animation.doOnResume
 import androidx.core.animation.doOnStart
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -35,7 +33,9 @@ import com.example.musick.SpotifyManager.spotifyAppRemote
 import com.google.android.material.imageview.ShapeableImageView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 
 class GameActivity : AppCompatActivity() {
 
@@ -72,7 +72,11 @@ class GameActivity : AppCompatActivity() {
 
     private var albumArtCache = mutableMapOf<ImageUri, Bitmap>()
 
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
+
+    private var isApplyingRandomStart = false
+    private var currentRandomStartAttempt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,28 +95,32 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Reconnect to Spotify App if needed
         if (!SpotifyManager.isConnected()) {
             coroutineScope.launch {
-                if (!SpotifyManager.isConnected()) {
+                try {
                     val connected = SpotifyManager.connectToSpotifyAppRemote(this@GameActivity)
                     if (!connected) {
-                        Toast.makeText(
-                            this@GameActivity,
-                            "Failed to connect to Spotify",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        showErrorToast("Failed to connect to Spotify")
                         finish()
                         return@launch
                     }
-                }
-                startProgressBarUpdate()
-
-                getTrackInfos { _, _, albumCoverImageUri, _ ->
-                    preloadAlbumArtwork(albumCoverImageUri)
+                    startProgressBarUpdateSafe()
+                    preloadCurrentTrackArt()
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Resume connection error", e)
+                    showErrorToast("Connection error: ${e.message}")
                 }
             }
+        } else {
+            startProgressBarUpdateSafe()
+            preloadCurrentTrackArt()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopProgressBarUpdateSafe()
+        cleanupSpotifySubscriptions()
     }
 
     private fun initializeViews() {
@@ -135,19 +143,25 @@ class GameActivity : AppCompatActivity() {
 
     private fun ensureSpotifyConnection() {
         coroutineScope.launch {
-            if (!SpotifyManager.isConnected()) {
-                val connected = SpotifyManager.connectToSpotifyAppRemote(this@GameActivity)
-                if (!connected) {
-                    Toast.makeText(this@GameActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
-                    finish()
-                    return@launch
+            try {
+                if (!SpotifyManager.isConnected()) {
+                    val connected = SpotifyManager.connectToSpotifyAppRemote(this@GameActivity)
+                    if (!connected) {
+                        showErrorToast("Failed to connect to Spotify")
+                        finish()
+                        return@launch
+                    }
                 }
+                setupGame()
+                pendingPlaylistId?.let { playlistId ->
+                    playPlaylist(playlistId)
+                }
+                hideLoading()
+            } catch (e: Exception) {
+                Log.e("GameActivity", "Connection error", e)
+                showErrorToast("Connection failed: ${e.message}")
+                finish()
             }
-            setupGame()
-            pendingPlaylistId?.let { playlistId ->
-                playPlaylist(playlistId)
-            }
-            hideLoading()
         }
     }
 
@@ -160,19 +174,23 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun setupScoresRecyclerView() {
-        playerScoresRecyclerView.layoutManager = LinearLayoutManager(this)
-        playerScoresRecyclerView.adapter = PlayerScoreAdapter(scores) { player, points ->
-            updatePlayerScore(player, points)
+        try {
+            playerScoresRecyclerView.layoutManager = LinearLayoutManager(this)
+            playerScoresRecyclerView.adapter = PlayerScoreAdapter(scores) { player, points ->
+                updatePlayerScore(player, points)
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error setting up scores RecyclerView", e)
         }
     }
 
     private fun setupListeners() {
         buzzerButton.setOnClickListener {
-            vibrate(100)
+            vibrateSafe(100)
             handleBuzzerButtonClick()
         }
         albumArtworkImageView.setOnClickListener {
-            vibrate(100)
+            vibrateSafe(100)
             handleAlbumCoverClick()
         }
         controlButton.setOnClickListener {
@@ -183,48 +201,219 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun getTrackInfos(callback: (Track?, String, ImageUri?, Long) -> Unit) {
-        spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
-            val track = playerState.track
-            currentTrack = track
-            val artistName = track?.artist?.name ?: ""
-            val albumCoverImageUri = track?.imageUri
-            val progress = playerState.playbackPosition
+    private fun getTrackInfosSafe(callback: (Track?, String, ImageUri?, Long) -> Unit) {
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                try {
+                    val track = playerState?.track
+                    currentTrack = track
+                    val artistName = track?.artist?.name ?: ""
+                    val albumCoverImageUri = track?.imageUri
+                    val progress = playerState?.playbackPosition ?: 0L
 
-            callback(track, artistName, albumCoverImageUri, progress)
+                    callback(track, artistName, albumCoverImageUri, progress)
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Error processing track info", e)
+                }
+            }?.setErrorCallback { throwable ->
+                Log.e("GameActivity", "Error getting track info", throwable)
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error setting up track info callback", e)
         }
     }
 
     private fun startSong() {
-        if (isSongPaused) {
-            spotifyAppRemote?.playerApi?.resume()
-        }
-        isSongPaused = false
-        pauseIcon.visibility = View.VISIBLE
-        playIcon.visibility = View.GONE
-        startSpinningAnimation()
-        updateButtonStates()
-        startProgressBarUpdate()
+        try {
+            if (isSongPaused) {
+                spotifyAppRemote?.playerApi?.resume()
+            }
+            isSongPaused = false
+            pauseIcon.visibility = View.VISIBLE
+            playIcon.visibility = View.GONE
+            startSpinningAnimation()
+            updateButtonStates()
+            startProgressBarUpdateSafe()
 
-        getTrackInfos { _, _, albumCoverImageUri, _ ->
-            preloadAlbumArtwork(albumCoverImageUri)
+            preloadCurrentTrackArt()
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error starting song", e)
+            showErrorToast("Failed to start song")
         }
     }
 
     private fun pauseSong() {
-        spotifyAppRemote?.playerApi?.pause()
-        isSongPaused = true
-        pauseIcon.visibility = View.GONE
-        playIcon.visibility = View.VISIBLE
-        pauseSpinningAnimation()
-        updateButtonStates()
-        stopProgressBarUpdate()
+        try {
+            spotifyAppRemote?.playerApi?.pause()
+            isSongPaused = true
+            pauseIcon.visibility = View.GONE
+            playIcon.visibility = View.VISIBLE
+            pauseSpinningAnimation()
+            updateButtonStates()
+            stopProgressBarUpdateSafe()
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error pausing song", e)
+            showErrorToast("Failed to pause song")
+        }
     }
 
     private fun playPlaylist(playlistId: String) {
-        spotifyAppRemote?.playerApi?.let { playerApi ->
-            playerApi.setShuffle(true)
-            playerApi.play("spotify:playlist:$playlistId")
+        try {
+            spotifyAppRemote?.playerApi?.let { playerApi ->
+                playerApi.setShuffle(true)
+                playerApi.play("spotify:playlist:$playlistId")
+
+                // Apply random start if enabled - simple and direct
+                if (SettingsActivity.isRandomStartEnabled(this)) {
+                    applyRandomStart()
+                } else {
+                    startSong()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error playing playlist", e)
+            showErrorToast("Failed to play playlist")
+        }
+    }
+
+    private fun applyRandomStart() {
+        // Prevent multiple simultaneous random start attempts
+        if (isApplyingRandomStart) {
+            Log.d("GameActivity", "Random start already in progress, skipping")
+            return
+        }
+
+        isApplyingRandomStart = true
+        currentRandomStartAttempt = 0
+
+        // Start polling immediately for track info
+        pollForTrackAndSeek(0, 50) // Start with 0 attempts, 50ms intervals
+    }
+
+    private fun pollForTrackAndSeek(attempts: Int, intervalMs: Long) {
+        if (isFinishing || isDestroyed) {
+            isApplyingRandomStart = false
+            return
+        }
+
+        // Maximum attempts to prevent infinite polling (10 seconds total)
+        val maxAttempts = (10000 / intervalMs).toInt()
+
+        if (attempts >= maxAttempts) {
+            Log.w("GameActivity", "Random start failed after ${attempts} attempts")
+            isApplyingRandomStart = false
+            startSong()
+            return
+        }
+
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                val track = playerState?.track
+
+                if (track != null && track.duration > 0) {
+                    // Track is loaded! Calculate and seek to random position
+                    val songDuration = track.duration
+                    val firstThirdDuration = songDuration / 3
+                    val minStartPosition = 10000L // 10 seconds minimum
+                    val maxStartPosition = maxOf(minStartPosition, firstThirdDuration)
+                    val randomPosition = (minStartPosition..maxStartPosition).random()
+
+                    Log.d("GameActivity", "Track loaded: ${track.name}, duration: ${songDuration}ms")
+                    Log.d("GameActivity", "Seeking to random position: ${randomPosition}ms (${randomPosition/1000}s)")
+
+                    // Seek to random position with verification
+                    spotifyAppRemote?.playerApi?.seekTo(randomPosition)?.setResultCallback {
+                        Log.d("GameActivity", "Seek command successful")
+
+                        // Verify the seek actually worked by checking position after a brief delay
+                        val verifyRunnable = Runnable {
+                            verifySeekSuccess(randomPosition)
+                        }
+                        mainHandler.postDelayed(verifyRunnable, 300)
+
+                    }?.setErrorCallback { error ->
+                        Log.e("GameActivity", "Seek command failed: ${error.message}")
+                        isApplyingRandomStart = false
+                        startSong()
+                    }
+
+                } else {
+                    // Track not ready yet, poll again with exponential backoff
+                    val nextInterval = if (attempts < 10) intervalMs else minOf(intervalMs * 2, 500L)
+
+                    Log.d("GameActivity", "Track not ready (attempt ${attempts + 1}), retrying in ${nextInterval}ms")
+
+                    val pollRunnable = Runnable {
+                        pollForTrackAndSeek(attempts + 1, nextInterval)
+                    }
+                    mainHandler.postDelayed(pollRunnable, nextInterval)
+                }
+
+            }?.setErrorCallback { error ->
+                Log.e("GameActivity", "Failed to get player state: ${error.message}")
+                // API call failed, retry with longer interval
+                val retryRunnable = Runnable {
+                    pollForTrackAndSeek(attempts + 1, intervalMs * 2)
+                }
+                mainHandler.postDelayed(retryRunnable, intervalMs * 2)
+            }
+
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error in pollForTrackAndSeek", e)
+            isApplyingRandomStart = false
+            startSong()
+        }
+    }
+
+    private fun verifySeekSuccess(expectedPosition: Long) {
+        if (isFinishing || isDestroyed) {
+            isApplyingRandomStart = false
+            return
+        }
+
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                val currentPosition = playerState?.playbackPosition ?: 0L
+                val positionDiff = kotlin.math.abs(currentPosition - expectedPosition)
+
+                Log.d("GameActivity", "Seek verification - Expected: ${expectedPosition/1000}s, Actual: ${currentPosition/1000}s, Diff: ${positionDiff/1000}s")
+
+                if (positionDiff < 5000) { // Within 5 seconds is acceptable
+                    Log.d("GameActivity", "Seek verification successful")
+                    isApplyingRandomStart = false
+                    startSong()
+                } else {
+                    Log.w("GameActivity", "Seek verification failed, retrying...")
+                    // Try seeking again if we have attempts left
+                    if (currentRandomStartAttempt < 3) {
+                        currentRandomStartAttempt++
+
+                        val retryRunnable = Runnable {
+                            spotifyAppRemote?.playerApi?.seekTo(expectedPosition)?.setResultCallback {
+                                val verifyAgainRunnable = Runnable {
+                                    verifySeekSuccess(expectedPosition)
+                                }
+                                mainHandler.postDelayed(verifyAgainRunnable, 300)
+                            }?.setErrorCallback {
+                                isApplyingRandomStart = false
+                                startSong()
+                            }
+                        }
+                        mainHandler.postDelayed(retryRunnable, 200)
+                    } else {
+                        Log.e("GameActivity", "Seek failed after multiple attempts, starting normally")
+                        isApplyingRandomStart = false
+                        startSong()
+                    }
+                }
+            }?.setErrorCallback {
+                Log.e("GameActivity", "Failed to verify seek position")
+                isApplyingRandomStart = false
+                startSong()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error verifying seek success", e)
+            isApplyingRandomStart = false
             startSong()
         }
     }
@@ -256,19 +445,23 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun revealSongInfo() {
-        getTrackInfos { track, artistName, albumCoverImageUri, _ ->
+        getTrackInfosSafe { track, artistName, albumCoverImageUri, _ ->
             currentTrack = track
             runOnUiThread {
-                guessSongText.visibility = View.GONE
-                songNameText.apply {
-                    text = track?.name
-                    visibility = View.VISIBLE
+                try {
+                    guessSongText.visibility = View.GONE
+                    songNameText.apply {
+                        text = track?.name ?: "Unknown Song"
+                        visibility = View.VISIBLE
+                    }
+                    artistNameText.apply {
+                        text = artistName
+                        visibility = View.VISIBLE
+                    }
+                    transformBuzzerToAlbumCover(albumCoverImageUri)
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Error updating UI in reveal", e)
                 }
-                artistNameText.apply {
-                    text = artistName
-                    visibility = View.VISIBLE
-                }
-                transformBuzzerToAlbumCover(albumCoverImageUri)
             }
         }
         isSongRevealed = true
@@ -276,166 +469,299 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun transformBuzzerToAlbumCover(albumCoverImageUri: ImageUri?) {
-        val fadeOut = ObjectAnimator.ofFloat(buzzerButton, "alpha", 1f, 0f)
-        val fadeIn = ObjectAnimator.ofFloat(albumArtworkImageView, "alpha", 0f, 1f)
+        try {
+            val fadeOut = ObjectAnimator.ofFloat(buzzerButton, "alpha", 1f, 0f)
+            val fadeIn = ObjectAnimator.ofFloat(albumArtworkImageView, "alpha", 0f, 1f)
 
-        AnimatorSet().apply {
-            playTogether(fadeOut, fadeIn)
-            duration = 500
-            doOnStart {
-                loadAlbumArtwork(albumCoverImageUri)
-                albumArtworkImageView.visibility = View.VISIBLE
+            AnimatorSet().apply {
+                playTogether(fadeOut, fadeIn)
+                duration = 500
+                doOnStart {
+                    loadAlbumArtworkSafe(albumCoverImageUri)
+                    albumArtworkImageView.visibility = View.VISIBLE
+                }
+                doOnEnd {
+                    buzzerButton.visibility = View.GONE
+                }
+                start()
             }
-            doOnEnd {
-                buzzerButton.visibility = View.GONE
-            }
-            start()
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error in buzzer to album animation", e)
+            buzzerButton.visibility = View.GONE
+            albumArtworkImageView.visibility = View.VISIBLE
+            loadAlbumArtworkSafe(albumCoverImageUri)
         }
     }
 
     private fun transformAlbumCoverToBuzzer() {
-        val fadeOut = ObjectAnimator.ofFloat(albumArtworkImageView, "alpha", 1f, 0f)
-        val fadeIn = ObjectAnimator.ofFloat(buzzerButton, "alpha", 0f, 1f)
+        try {
+            val fadeOut = ObjectAnimator.ofFloat(albumArtworkImageView, "alpha", 1f, 0f)
+            val fadeIn = ObjectAnimator.ofFloat(buzzerButton, "alpha", 0f, 1f)
 
-        AnimatorSet().apply {
-            playTogether(fadeOut, fadeIn)
-            duration = 500
-            doOnStart {
-                buzzerButton.visibility = View.VISIBLE
+            AnimatorSet().apply {
+                playTogether(fadeOut, fadeIn)
+                duration = 500
+                doOnStart {
+                    buzzerButton.visibility = View.VISIBLE
+                }
+                doOnEnd {
+                    albumArtworkImageView.visibility = View.GONE
+                }
+                start()
             }
-            doOnEnd {
-                albumArtworkImageView.visibility = View.GONE
-            }
-            start()
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error in album to buzzer animation", e)
+            albumArtworkImageView.visibility = View.GONE
+            buzzerButton.visibility = View.VISIBLE
+        }
+    }
+
+    private fun preloadCurrentTrackArt() {
+        getTrackInfosSafe { _, _, albumCoverImageUri, _ ->
+            preloadAlbumArtwork(albumCoverImageUri)
         }
     }
 
     private fun preloadAlbumArtwork(imageUri: ImageUri?) {
         imageUri?.let { uri ->
             if (albumArtCache[uri] == null) {
-                spotifyAppRemote?.imagesApi?.getImage(imageUri)?.setResultCallback { bitmap ->
-                    albumArtCache[uri] = bitmap
+                try {
+                    spotifyAppRemote?.imagesApi?.getImage(imageUri)?.setResultCallback { bitmap ->
+                        albumArtCache[uri] = bitmap
+                    }?.setErrorCallback { throwable ->
+                        Log.e("GameActivity", "Failed to preload image: ${throwable.message}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Error preloading artwork", e)
                 }
             }
         }
     }
 
-    private fun loadAlbumArtwork(imageUri: ImageUri?) {
+    private fun loadAlbumArtworkSafe(imageUri: ImageUri?) {
         imageUri?.let { uri ->
             val cachedBitmap = albumArtCache[uri]
-            if (cachedBitmap != null) {
+            if (cachedBitmap != null && !cachedBitmap.isRecycled) {
                 runOnUiThread {
-                    albumArtworkImageView.setImageBitmap(cachedBitmap)
+                    try {
+                        if (!isFinishing && !isDestroyed) {
+                            albumArtworkImageView.setImageBitmap(cachedBitmap)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GameActivity", "Error setting cached bitmap", e)
+                    }
                 }
             } else {
-                // If the image is not in cache, retrieve it from Spotify's imagesApi
-                spotifyAppRemote?.imagesApi?.getImage(imageUri)?.setResultCallback { bitmap ->
-                    runOnUiThread {
-                        albumArtworkImageView.setImageBitmap(bitmap)
+                try {
+                    spotifyAppRemote?.imagesApi?.getImage(imageUri)?.setResultCallback { bitmap ->
+                        if (bitmap != null && !bitmap.isRecycled) {
+                            albumArtCache[uri] = bitmap
+                            runOnUiThread {
+                                try {
+                                    if (!isFinishing && !isDestroyed) {
+                                        albumArtworkImageView.setImageBitmap(bitmap)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("GameActivity", "Error setting new bitmap", e)
+                                }
+                            }
+                        }
+                    }?.setErrorCallback { throwable ->
+                        Log.e("GameActivity", "Failed to load image from Spotify: ${throwable.message}")
                     }
-                }?.setErrorCallback { throwable ->
-                    // Handle any errors here, such as logging or displaying a placeholder
-                    Log.e("SpotifyImages", "Failed to load image from Spotify: ${throwable.message}")
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Error loading artwork", e)
                 }
             }
         }
     }
 
     private fun skipSong() {
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
         resetForNewSong()
-        spotifyAppRemote?.playerApi?.skipNext()
-        startSong()
+
+        try {
+            spotifyAppRemote?.playerApi?.skipNext()
+
+            if (SettingsActivity.isRandomStartEnabled(this)) {
+                applyRandomStart()
+            } else {
+                startSong()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error skipping song", e)
+            showErrorToast("Failed to skip song")
+        }
     }
 
     private fun nextTurn() {
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
         currentPlayerIndex = (currentPlayerIndex + 1) % playerNames.size
         updateCurrentPlayer()
         resetForNewSong()
-        spotifyAppRemote?.playerApi?.skipNext()
-        startSong()
+
+        try {
+            spotifyAppRemote?.playerApi?.skipNext()
+
+            if (SettingsActivity.isRandomStartEnabled(this)) {
+                applyRandomStart()
+            } else {
+                startSong()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error in next turn", e)
+            showErrorToast("Failed to skip to next song")
+        }
     }
 
     private fun updateCurrentPlayer() {
-        currentPlayerText.text = "${playerNames[currentPlayerIndex]}"
+        try {
+            if (playerNames.isNotEmpty()) {
+                currentPlayerText.text = playerNames[currentPlayerIndex]
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error updating current player", e)
+        }
     }
 
     private fun resetForNewSong() {
+        // Clear random start flag
+        isApplyingRandomStart = false
+        currentRandomStartAttempt = 0
+
+        // IMMEDIATE progress bar reset - force UI update right now
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+
+        // Stop all updates immediately
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
+        // Stop animation cleanly
+        pauseSpinningAnimation()
+
+        // Reset game state
         transformAlbumCoverToBuzzer()
         isSongPaused = false
         isSongRevealed = false
         guessSongText.visibility = View.VISIBLE
         songNameText.visibility = View.GONE
         artistNameText.visibility = View.GONE
-        // Clear albumArtCache
         albumArtCache.clear()
+
+        // Reset rotation to 0 for new song
+        lastRotation = 0f
+        buzzerButton.rotation = 0f
+
         updateButtonStates()
-        stopProgressBarUpdate()
     }
 
     private fun updateButtonStates() {
-        buzzerButton.isEnabled = !isSongRevealed
+        try {
+            buzzerButton.isEnabled = !isSongRevealed
 
-        when {
-            isSongRevealed -> {
-                controlButton.visibility = View.INVISIBLE
-                albumArtworkImageView.visibility = View.VISIBLE
-                skipButton.isEnabled = false
+            when {
+                isSongRevealed -> {
+                    controlButton.visibility = View.INVISIBLE
+                    albumArtworkImageView.visibility = View.VISIBLE
+                    skipButton.isEnabled = false
+                }
+                isSongPaused -> {
+                    controlButton.visibility = View.VISIBLE
+                    controlButton.text = "Reveal"
+                    albumArtworkImageView.visibility = View.GONE
+                    skipButton.isEnabled = false
+                    pauseSpinningAnimation()
+                }
+                else -> {
+                    controlButton.visibility = View.INVISIBLE
+                    albumArtworkImageView.visibility = View.GONE
+                    skipButton.isEnabled = true
+                    startSpinningAnimation()
+                }
             }
-            isSongPaused -> {
-                controlButton.visibility = View.VISIBLE
-                controlButton.text = "Reveal"
-                albumArtworkImageView.visibility = View.GONE
-                skipButton.isEnabled = false
-                pauseSpinningAnimation()
-            }
-            else -> {
-                controlButton.visibility = View.INVISIBLE
-                albumArtworkImageView.visibility = View.GONE
-                skipButton.isEnabled = true
-                startSpinningAnimation()
-            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error updating button states", e)
         }
     }
 
     private fun updatePlayerScore(player: String, points: Int) {
-        scores[player] = scores[player]!! + points
-        playerScoresRecyclerView.adapter?.notifyDataSetChanged()
+        try {
+            val currentScore = scores[player] ?: 0
+            scores[player] = currentScore + points
+            playerScoresRecyclerView.adapter?.notifyDataSetChanged()
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error updating player score", e)
+        }
     }
 
     private fun setupSpinningAnimation() {
-        spinningAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
-            duration = 3000 // 3 seconds for a full rotation
-            repeatCount = ValueAnimator.INFINITE
-            interpolator = LinearInterpolator()
-            addUpdateListener { animator ->
-                val rotation = animator.animatedValue as Float
-                buzzerButton.rotation = rotation
-                lastRotation = rotation
+        try {
+            spinningAnimator = ValueAnimator.ofFloat(0f, 360f).apply {
+                duration = 3000 // 3 seconds for a full rotation
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = LinearInterpolator()
+                addUpdateListener { animator ->
+                    try {
+                        if (!isFinishing && !isDestroyed) {
+                            val rotation = animator.animatedValue as Float
+                            buzzerButton.rotation = rotation
+                            lastRotation = rotation
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GameActivity", "Error in animation update", e)
+                    }
+                }
+                doOnCancel {
+                    if (!isFinishing && !isDestroyed) {
+                        lastRotation = buzzerButton.rotation
+                    }
+                }
+                doOnEnd {
+                    if (!isFinishing && !isDestroyed) {
+                        lastRotation = buzzerButton.rotation
+                    }
+                }
             }
-            doOnPause {
-                // Store the current rotation when paused
-                lastRotation = buzzerButton.rotation
-            }
-            doOnResume {
-                // Start from the last rotation when resumed
-                setFloatValues(lastRotation, lastRotation + 360f)
-            }
-            doOnCancel {
-                buzzerButton.rotation = 0f
-            }
-            doOnEnd {
-                buzzerButton.rotation = 0f
-            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error setting up spinning animation", e)
         }
     }
 
     private fun startSpinningAnimation() {
         try {
-            if (spinningAnimator.isPaused) {
-                spinningAnimator.resume()
-            } else {
-                spinningAnimator.start()
+            if (!::spinningAnimator.isInitialized) {
+                setupSpinningAnimation()
             }
+
+            if (spinningAnimator.isRunning) {
+                // Already running, no need to restart
+                return
+            }
+
+            // Get current rotation and normalize it to 0-360 range
+            val currentRotation = buzzerButton.rotation % 360f
+            val normalizedRotation = if (currentRotation < 0) currentRotation + 360f else currentRotation
+
+            // Cancel any existing animation
+            spinningAnimator.cancel()
+
+            // Start from current position and continue smoothly
+            spinningAnimator.setFloatValues(normalizedRotation, normalizedRotation + 360f)
+            spinningAnimator.start()
+
+            Log.d("GameActivity", "Started spinning from ${normalizedRotation} degrees")
         } catch (e: Exception) {
             Log.e("GameActivity", "Error starting spinning animation", e)
         }
@@ -443,7 +769,16 @@ class GameActivity : AppCompatActivity() {
 
     private fun pauseSpinningAnimation() {
         try {
-            spinningAnimator.pause()
+            if (::spinningAnimator.isInitialized && spinningAnimator.isRunning) {
+                // Store the exact current rotation
+                lastRotation = buzzerButton.rotation
+                spinningAnimator.cancel()
+
+                // Keep the rotation at the exact position where we stopped
+                buzzerButton.rotation = lastRotation
+
+                Log.d("GameActivity", "Paused spinning at ${lastRotation} degrees")
+            }
         } catch (e: Exception) {
             Log.e("GameActivity", "Error pausing spinning animation", e)
         }
@@ -451,66 +786,130 @@ class GameActivity : AppCompatActivity() {
 
     private fun setupProgressBar() {
         songProgressBar = findViewById(R.id.songProgressBar)
-        songProgressBar.max = 1000 // Using 1000 steps for smoother animation
+        songProgressBar.max = 1000
     }
 
-    private fun startProgressBarUpdate() {
+    private fun startProgressBarUpdateSafe() {
         if (!isProgressBarUpdating) {
             isProgressBarUpdating = true
-            updateProgressBar()
+            updateProgressBarSafe()
         }
     }
 
-    private fun stopProgressBarUpdate() {
-        isProgressBarUpdating = false
-    }
+    private fun updateProgressBarSafe() {
+        if (!isProgressBarUpdating || isFinishing || isDestroyed) return
 
-    private fun updateProgressBar() {
-        if (!isProgressBarUpdating) return
+        try {
+            cleanupSpotifySubscriptions()
 
-        spotifyAppRemote?.playerApi?.subscribeToPlayerState()?.setEventCallback { playerState ->
-            val track = playerState.track
-            if (track != null) {
-                val songDuration = track.duration
-                val currentProgress = playerState.playbackPosition
-                val progress = ((currentProgress.toFloat() / songDuration.toFloat()) * 1000).toInt()
-                runOnUiThread {
-                    songProgressBar.progress = progress
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                try {
+                    val track = playerState?.track
+                    if (track != null && !isFinishing && !isDestroyed) {
+                        val songDuration = track.duration
+                        val currentProgress = playerState.playbackPosition
+                        val progress = ((currentProgress.toFloat() / songDuration.toFloat()) * 1000).toInt()
+
+                        runOnUiThread {
+                            try {
+                                if (!isFinishing && !isDestroyed) {
+                                    songProgressBar.progress = progress
+                                }
+                            } catch (e: Exception) {
+                                Log.e("GameActivity", "Error updating progress bar UI", e)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("GameActivity", "Error in progress bar callback", e)
                 }
+            }?.setErrorCallback { throwable ->
+                Log.e("GameActivity", "Error getting player state: ${throwable.message}")
             }
-        }
 
-        Handler(Looper.getMainLooper()).postDelayed({
-            updateProgressBar()
-        }, 1000) // Update every second
+            val progressRunnable = Runnable {
+                updateProgressBarSafe()
+            }
+            mainHandler.postDelayed(progressRunnable, 1000)
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error setting up progress bar update", e)
+        }
     }
 
-    private fun resetProgressBar() {
-        runOnUiThread {
-            songProgressBar.progress = 0
+    private fun stopProgressBarUpdateSafe() {
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null) // Clear all pending handlers
+        cleanupSpotifySubscriptions()
+    }
+
+    private fun cleanupSpotifySubscriptions() {
+        try {
+            mainHandler.removeCallbacksAndMessages(null)
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error cleaning up callbacks", e)
         }
     }
 
     private fun showLoading(message: String) {
-        loadingText.text = message
-        loadingOverlay.visibility = View.VISIBLE
+        try {
+            loadingText.text = message
+            loadingOverlay.visibility = View.VISIBLE
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error showing loading", e)
+        }
     }
 
     private fun hideLoading() {
-        loadingOverlay.visibility = View.GONE
+        try {
+            loadingOverlay.visibility = View.GONE
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error hiding loading", e)
+        }
+    }
+
+    private fun showErrorToast(message: String) {
+        try {
+            if (!isFinishing && !isDestroyed) {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error showing toast", e)
+        }
+    }
+
+    private fun vibrateSafe(durationMillis: Long = 50) {
+        try {
+            vibrate(durationMillis)
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error vibrating", e)
+        }
     }
 
     override fun onStop() {
         super.onStop()
-        stopProgressBarUpdate()
+        stopProgressBarUpdateSafe()
+        cleanupSpotifySubscriptions()
         SpotifyManager.disconnectSpotifyAppRemote()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        stopProgressBarUpdate()
-        SpotifyManager.disconnectSpotifyAppRemote()
+
+        mainHandler.removeCallbacksAndMessages(null)
+        stopProgressBarUpdateSafe()
+        cleanupSpotifySubscriptions()
+
+        try {
+            if (::spinningAnimator.isInitialized) {
+                spinningAnimator.cancel()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error cancelling animation", e)
+        }
+
+        coroutineScope.cancel()
         albumArtCache.clear()
+        SpotifyManager.disconnectSpotifyAppRemote()
     }
 }
 
@@ -533,47 +932,64 @@ class PlayerScoreAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val player = scores.keys.elementAt(position)
-        val score = scores[player] ?: 0
+        try {
+            val player = scores.keys.elementAt(position)
+            val score = scores[player] ?: 0
 
-        holder.playerNameText.text = player
-        holder.scoreText.text = score.toString()
+            holder.playerNameText.text = player
+            holder.scoreText.text = score.toString()
 
-        // Find the highest score in the list
-        val maxScore = scores.values.maxOrNull() ?: 0
+            val maxScore = scores.values.maxOrNull() ?: 0
 
-        // Set score and player name color based on whether it's the highest score
-        if (score == maxScore && score > 0) {
-            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
-            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
-        } else {
-            holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.white))
-            holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.white))
+            if (score == maxScore && score > 0) {
+                holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+                holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.spotify_green))
+            } else {
+                holder.scoreText.setTextColor(holder.itemView.context.getColor(R.color.white))
+                holder.playerNameText.setTextColor(holder.itemView.context.getColor(R.color.white))
+            }
+
+            holder.minusOneButton.setOnClickListener {
+                try {
+                    onScoreChange(player, -1)
+                } catch (e: Exception) {
+                    Log.e("PlayerScoreAdapter", "Error decreasing score", e)
+                }
+            }
+            holder.plusOneButton.setOnClickListener {
+                try {
+                    onScoreChange(player, 1)
+                } catch (e: Exception) {
+                    Log.e("PlayerScoreAdapter", "Error increasing score", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PlayerScoreAdapter", "Error binding view holder", e)
         }
-
-        // Update score with button clicks
-        holder.minusOneButton.setOnClickListener { onScoreChange(player, -1) }
-        holder.plusOneButton.setOnClickListener { onScoreChange(player, 1) }
     }
 
     override fun getItemCount() = scores.size
 }
 
 fun Context.vibrate(durationMillis: Long = 50) {
-    when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
-            vibratorManager.defaultVibrator.vibrate(vibrationEffect)
+    try {
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibratorManager.defaultVibrator.vibrate(vibrationEffect)
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibrator.vibrate(vibrationEffect)
+            }
+            else -> {
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                vibrator.vibrate(durationMillis)
+            }
         }
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
-            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
-            vibrator.vibrate(vibrationEffect)
-        }
-        else -> {
-            val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            vibrator.vibrate(durationMillis)
-        }
+    } catch (e: Exception) {
+        Log.e("VibrationExtension", "Error vibrating", e)
     }
 }

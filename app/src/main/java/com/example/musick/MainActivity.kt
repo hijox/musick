@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -23,6 +24,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.musick.utils.Result
+import com.example.musick.utils.onSuccess
+import com.example.musick.utils.onError
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appDescriptionTextView: TextView
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var loadingStatusText: TextView
+    private lateinit var settingsButton: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,11 +78,16 @@ class MainActivity : AppCompatActivity() {
         appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
         loadingIndicator = findViewById(R.id.loadingIndicator)
         loadingStatusText = findViewById(R.id.loadingStatusText)
+        settingsButton = findViewById(R.id.settingsButton)
     }
 
     private fun setupClickListeners() {
         startGameButton.setOnClickListener { startGame() }
         loginButton.setOnClickListener { initiateSpotifyLogin() }
+        settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun setupLoginScreen() {
@@ -193,34 +203,35 @@ class MainActivity : AppCompatActivity() {
 
     private fun startGameWithPlaylist(playlistId: String, playlistLink: String) {
         if (!SpotifyManager.isTokenValid()) {
-            checkAndRefreshToken()
+            showErrorWithRetry("Please log in to Spotify first") {
+                checkAndRefreshToken()
+            }
             return
         }
 
         if (!SpotifyManager.isConnected()) {
-            Toast.makeText(this, "Connecting to Spotify", Toast.LENGTH_SHORT).show()
+            showLoadingState()
             coroutineScope.launch {
-                showLoadingState()
-                val connected = SpotifyManager.connectToSpotifyAppRemote(this@MainActivity)
-                if (connected) {
-                    launchGameActivity(playlistId)
-                } else {
-                    Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
-                    showLoginRequired()
+                try {
+                    val connected = SpotifyManager.connectToSpotifyAppRemote(this@MainActivity)
+                    if (connected) {
+                        launchGameActivity(playlistId)
+                        fetchAndSavePlaylistInfo(playlistId, playlistLink)
+                    } else {
+                        showErrorWithRetry("Failed to connect to Spotify. Make sure Spotify app is installed and you're logged in.") {
+                            startGameWithPlaylist(playlistId, playlistLink)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Connection error", e)
+                    showErrorWithRetry("Connection failed: ${e.message}") {
+                        startGameWithPlaylist(playlistId, playlistLink)
+                    }
                 }
             }
         } else {
             launchGameActivity(playlistId)
-
-            // Fetch playlist name asynchronously
-            coroutineScope.launch {
-                try {
-                    val playlistName = fetchPlaylistName(playlistId)
-                    addToPlaylistHistory(playlistId, playlistName, playlistLink)
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}")
-                }
-            }
+            fetchAndSavePlaylistInfo(playlistId, playlistLink)
         }
     }
 
@@ -230,12 +241,40 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    private fun fetchAndSavePlaylistInfo(playlistId: String, playlistLink: String) {
+        coroutineScope.launch {
+            try {
+                showLoading("Fetching playlist info...")
+                val playlistName = fetchPlaylistName(playlistId)
+                addToPlaylistHistory(playlistId, playlistName, playlistLink)
+                hideLoading()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to fetch playlist info: ${e.message}", e)
+                hideLoading()
+                // Still add to history with a default name
+                addToPlaylistHistory(playlistId, "Unknown Playlist", playlistLink)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Started game but couldn't fetch playlist details",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
     private suspend fun fetchPlaylistName(playlistId: String): String {
         return withContext(Dispatchers.IO) {
-            val accessToken = SpotifyManager.getAccessToken() ?: throw IllegalStateException("Access token is null")
-            val spotifyApi = SpotifyApiClient.create()
-            val response = spotifyApi.getPlaylist("Bearer $accessToken", playlistId)
-            response.name
+            val accessToken = SpotifyManager.getAccessToken()
+                ?: throw IllegalStateException("Access token is null")
+
+            when (val result = SpotifyApiClient.getPlaylistSafe(accessToken, playlistId)) {
+                is Result.Success -> result.data.name
+                is Result.Error -> {
+                    Log.e("MainActivity", "Failed to fetch playlist: ${result.message}", result.exception)
+                    throw result.exception
+                }
+                is Result.Loading -> throw IllegalStateException("Unexpected loading state")
+            }
         }
     }
 
@@ -287,6 +326,30 @@ class MainActivity : AppCompatActivity() {
         val regex = "playlist/([a-zA-Z0-9]+)".toRegex()
         val matchResult = regex.find(playlistLink)
         return matchResult?.groupValues?.get(1)
+    }
+
+    private fun showErrorWithRetry(message: String, retryAction: () -> Unit) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Error")
+            .setMessage(message)
+            .setPositiveButton("Retry") { _, _ -> retryAction() }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                showMainContent()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun showLoading(message: String = "Loading...") {
+        loadingIndicator.visibility = View.VISIBLE
+        loadingStatusText.visibility = View.VISIBLE
+        loadingStatusText.text = message
+    }
+
+    private fun hideLoading() {
+        loadingIndicator.visibility = View.GONE
+        loadingStatusText.visibility = View.GONE
     }
 }
 
