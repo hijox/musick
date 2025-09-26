@@ -509,6 +509,7 @@ class GameActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopProgressBarUpdate()
+        spotifyAppRemote?.playerApi?.pause()
         SpotifyManager.disconnectSpotifyAppRemote()
         albumArtCache.clear()
     }
