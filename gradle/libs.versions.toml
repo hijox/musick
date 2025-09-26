@@ -1,4 +1,5 @@
 [versions]
+activityKtx = "1.11.0"
 agp = "8.5.2"
 auth = "1.2.5"
 browser = "1.8.0"
@@ -17,14 +18,18 @@ appcompat = "1.7.0"
 gson = "2.11.0"
 glide = "5.0.0-rc01"
 constraintlayout = "2.1.4"
+lifecycleViewmodelKtx = "2.9.4"
 loggingInterceptor = "4.12.0"
 material = "1.12.0"
 okhttp = "4.9.0"
 retrofit = "2.9.0"
 
 [libraries]
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleViewmodelKtx" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 auth = { module = "com.spotify.android:auth", version.ref = "auth" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 glide-v4120 = { module = "com.github.bumptech.glide:glide", version.ref = "glideVersion" }
