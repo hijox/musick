@@ -1,16 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Example of a custom button style -->
-    <style name="Widget.Musick.Button" parent="Widget.MaterialComponents.Button">
-        <item name="android:textColor">@color/white</item>
-        <item name="android:backgroundTint">@color/spotify_green</item>
-        <item name="android:textColorHint">@color/gray</item>
+    <!-- Button Styles -->
+    <style name="Widget.Musick.Button" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/text_on_primary</item>
+        <item name="backgroundTint">@color/spotify_green</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+        <item name="android:minHeight">@dimen/button_height_medium</item>
+        <item name="android:textSize">@dimen/text_title_medium</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
+    
+    <style name="Widget.Musick.Button.Large" parent="Widget.Musick.Button">
+        <item name="android:minHeight">@dimen/button_height_large</item>
+        <item name="android:textSize">@dimen/text_title_large</item>
+    </style>
+    
+    <style name="Widget.Musick.Button.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="strokeColor">@color/surface_variant</item>
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+        <item name="android:minHeight">@dimen/button_height_medium</item>
+        <item name="android:textSize">@dimen/text_title_medium</item>
+    </style>
+    
+    <!-- Card Styles -->
+    <style name="Widget.Musick.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="android:layout_margin">@dimen/spacing_sm</item>
+    </style>
+    
+    <style name="Widget.Musick.Card.Player" parent="Widget.Musick.Card">
+        <item name="cardBackgroundColor">@color/spotify_green</item>
+        <item name="cardElevation">8dp</item>
+    </style>
+    
+    <!-- Text Input Styles -->
+    <style name="Widget.Musick.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/surface_variant</item>
+        <item name="boxStrokeColor">@color/spotify_green</item>
+        <item name="boxStrokeColorFocused">@color/spotify_green_light</item>
+        <item name="hintTextColor">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="boxCornerRadiusTopStart">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/button_corner_radius</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/button_corner_radius</item>
+    </style>
+    
+    <!-- Typography Styles -->
+    <style name="TextAppearance.Musick.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:textSize">@dimen/text_display_large</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontWeight">700</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:textSize">@dimen/text_display_medium</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontWeight">600</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textSize">@dimen/text_headline_large</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textSize">@dimen/text_headline_medium</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">@dimen/text_title_large</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">@dimen/text_body_large</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    
+    <style name="TextAppearance.Musick.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">@dimen/text_label_large</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+    
+    <!-- Image Styles -->
     <style name="roundedImageView" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">8dp</item>
+        <item name="cornerSize">@dimen/button_corner_radius</item>
     </style>
+    
     <style name="CircularImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+    
+    <!-- Progress Bar Style -->
+    <style name="Widget.Musick.ProgressBar" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="indicatorColor">@color/spotify_green</item>
+        <item name="trackColor">@color/surface_variant</item>
+        <item name="trackCornerRadius">4dp</item>
+    </style>
+    
+    <!-- Floating Action Button Style -->
+    <style name="Widget.Musick.FloatingActionButton" parent="Widget.Material3.FloatingActionButton.Large">
+        <item name="backgroundTint">@color/spotify_green</item>
+        <item name="tint">@color/text_on_primary</item>
+        <item name="elevation">8dp</item>
     </style>
 </resources>
