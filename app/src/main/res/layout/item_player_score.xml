@@ -2,15 +2,17 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    style="@style/Widget.Musick.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="@dimen/spacing_xs">
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="@color/surface">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/spacing_md">
+        android:padding="16dp">
 
         <!-- Player Name -->
         <TextView
@@ -18,9 +20,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="Player Name"
-            android:textAppearance="@style/TextAppearance.Musick.TitleLarge"
             android:textColor="@color/text_primary"
-            android:layout_marginEnd="@dimen/spacing_md"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="16dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -40,7 +43,6 @@
             <!-- Minus Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/minusOneButton"
-                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Decrease score"
@@ -55,24 +57,25 @@
                 app:iconSize="18dp"
                 app:iconGravity="textEnd"
                 app:iconPadding="0dp"
-                app:iconTint="@color/text_on_primary" />
+                app:iconTint="@color/text_on_primary"
+                app:cornerRadius="20dp" />
 
             <!-- Score Text -->
             <TextView
                 android:id="@+id/scoreText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/spacing_md"
+                android:layout_marginHorizontal="16dp"
                 android:text="0"
-                android:textAppearance="@style/TextAppearance.Musick.HeadlineMedium"
                 android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold"
                 android:minWidth="32dp"
                 android:gravity="center" />
 
             <!-- Plus Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/plusOneButton"
-                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Increase score"
@@ -87,7 +90,8 @@
                 app:iconSize="18dp"
                 app:iconGravity="textEnd"
                 app:iconPadding="0dp"
-                app:iconTint="@color/text_on_primary" />
+                app:iconTint="@color/text_on_primary"
+                app:cornerRadius="20dp" />
 
         </LinearLayout>
 
