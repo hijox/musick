@@ -104,9 +104,7 @@
                             style="@style/Widget.Musick.TextInputLayout"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Enter number (2-8)"
-                            app:startIconDrawable="@drawable/ic_settings"
-                            app:startIconTint="@color/spotify_green">
+                            android:hint="Enter number (2-8)">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/playerCountInput"
