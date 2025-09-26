@@ -225,11 +225,15 @@
                             android:layout_marginTop="24dp"
                             android:text="@string/start_game"
                             android:textColor="@color/text_on_primary"
-                            android:textSize="18sp"
+                            android:textSize="16sp"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
                             app:backgroundTint="@color/spotify_green"
                             app:cornerRadius="12dp"
                             app:icon="@drawable/play"
-                            app:iconGravity="textStart" />
+                            app:iconGravity="textStart"
+                            app:iconPadding="12dp"
+                            app:iconSize="20dp" />
 
                     </LinearLayout>
 
