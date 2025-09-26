@@ -7,12 +7,14 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
@@ -22,6 +24,7 @@ class PlayerSetupActivity : AppCompatActivity() {
 
     private lateinit var playerCountInput: TextInputEditText
     private lateinit var playerNamesLayout: LinearLayout
+    private lateinit var playerNamesCard: MaterialCardView
     private lateinit var startGameButton: MaterialButton
     private lateinit var sharedPreferences: SharedPreferences
     private var playerNames: MutableList<String> = mutableListOf()
@@ -33,6 +36,7 @@ class PlayerSetupActivity : AppCompatActivity() {
 
         playerCountInput = findViewById(R.id.playerCountInput)
         playerNamesLayout = findViewById(R.id.playerNamesLayout)
+        playerNamesCard = findViewById(R.id.playerNamesCard)
         startGameButton = findViewById(R.id.startGameButton)
 
         sharedPreferences = getSharedPreferences("PlayerSetup", Context.MODE_PRIVATE)
@@ -40,13 +44,31 @@ class PlayerSetupActivity : AppCompatActivity() {
         setupPlayerCountInput()
         loadLastConfiguration()
         setupStartGameButton()
+        setupBackButton()
+    }
+
+    private fun setupBackButton() {
+        val backButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.backButton)
+        backButton.setOnClickListener {
+            finish()
+        }
     }
 
     private fun setupPlayerCountInput() {
         playerCountInput.doAfterTextChanged { editable ->
             if (!isLoadingOldConfig) {
                 val count = editable.toString().toIntOrNull() ?: 0
-                generatePlayerNameInputs(count)
+                if (count in 2..8) {
+                    generatePlayerNameInputs(count)
+                } else if (count > 0) {
+                    // Invalid range, clear the input
+                    playerNamesCard.visibility = View.GONE
+                    updateStartGameButtonState()
+                } else {
+                    // Empty or zero, hide the card
+                    playerNamesCard.visibility = View.GONE
+                    updateStartGameButtonState()
+                }
             }
         }
     }
@@ -72,6 +94,8 @@ class PlayerSetupActivity : AppCompatActivity() {
             }
         }
 
+        // Show the player names card
+        playerNamesCard.visibility = View.VISIBLE
         updateStartGameButtonState()
     }
 
@@ -84,11 +108,12 @@ class PlayerSetupActivity : AppCompatActivity() {
                 setMargins(0, 0, 0, 16)
             }
             hint = "Player ${index + 1} name"
-            setBoxBackgroundColor(ContextCompat.getColor(context, R.color.dark_gray))
+            setBoxBackgroundColor(ContextCompat.getColor(context, R.color.surface_variant))
             setBoxStrokeColor(ContextCompat.getColor(context, R.color.spotify_green))
-            setHintTextColor(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.gray)))
-            isHintAnimationEnabled = false
+            setHintTextColor(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.text_secondary)))
+            isHintAnimationEnabled = true
             isHintEnabled = true
+            boxCornerRadius = 12f
         }
     }
 
@@ -98,7 +123,7 @@ class PlayerSetupActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextColor(ContextCompat.getColor(context, R.color.text_primary))
             setBackgroundResource(android.R.color.transparent)
             setText(playerNames.getOrNull(index))
             isSingleLine = true
@@ -132,28 +157,33 @@ class PlayerSetupActivity : AppCompatActivity() {
     }
 
     private fun updateStartGameButtonState() {
-        startGameButton.isEnabled = playerNames.isNotEmpty() && playerNames.all { it.isNotBlank() }
+        val hasValidPlayerCount = playerNames.isNotEmpty() && playerNames.size >= 2
+        val allNamesEntered = playerNames.all { it.isNotBlank() }
+        startGameButton.isEnabled = hasValidPlayerCount && allNamesEntered
     }
 
     private fun setupStartGameButton() {
         startGameButton.setOnClickListener {
-            saveConfiguration()
-            startGame()
+            if (startGameButton.isEnabled) {
+                saveConfiguration()
+                startGame()
+            }
         }
     }
 
     private fun startGame() {
         val playlistId = intent.getStringExtra("PLAYLIST_ID")
         val intent = Intent(this, GameActivity::class.java)
-        intent.putStringArrayListExtra("PLAYER_NAMES", ArrayList(playerNames))
+        intent.putStringArrayListExtra("PLAYER_NAMES", ArrayList(playerNames.filter { it.isNotBlank() }))
         intent.putExtra("PLAYLIST_ID", playlistId)
         startActivity(intent)
     }
 
     private fun saveConfiguration() {
         val editor = sharedPreferences.edit()
-        editor.putInt("playerCount", playerNames.size)
-        editor.putString("playerNames", Gson().toJson(playerNames))
+        val validPlayerNames = playerNames.filter { it.isNotBlank() }
+        editor.putInt("playerCount", validPlayerNames.size)
+        editor.putString("playerNames", Gson().toJson(validPlayerNames))
         editor.apply()
     }
 
@@ -164,7 +194,7 @@ class PlayerSetupActivity : AppCompatActivity() {
         if (savedPlayerCount > 0 && savedPlayerNamesJson != null) {
             isLoadingOldConfig = true
             val type = object : TypeToken<List<String>>() {}.type
-            playerNames = Gson().fromJson(savedPlayerNamesJson, type)
+            playerNames = Gson().fromJson<List<String>>(savedPlayerNamesJson, type).toMutableList()
             playerCountInput.setText(savedPlayerCount.toString())
             generatePlayerNameInputs(savedPlayerCount)
             isLoadingOldConfig = false
