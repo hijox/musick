@@ -1,284 +1,344 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_2"
+    android:fitsSystemWindows="true"
+    tools:context=".GameActivity">
 
-    <View
-        android:id="@+id/gradientBackground"
+    <!-- Main Content ScrollView -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/gradient_2" />
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/mainContent"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp" >
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/currentPlayerCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/spotify_green"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="8dp"
-            android:orientation="horizontal"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/currentPlayerText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="12dp"
-                android:textColor="@color/spotify_black"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_gravity="center_vertical|start"
-                tools:text="Player 1" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/skipButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/spotify_black"
-                android:backgroundTint="@color/spotify_green"
-                app:strokeColor="#A1189443"
-                app:strokeWidth="1dp"
-                android:elevation="8dp"
-                android:layout_marginEnd="4dp"
-                android:text="Skip Song"
-                android:padding="8dp"
-                android:textSize="12sp"
-                app:cornerRadius="8dp"
-                android:layout_gravity="center_vertical|end" />
-
-        </androidx.cardview.widget.CardView>
+        android:fillViewport="true">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/songInfoLayout"
-            android:layout_width="0dp"
+            android:id="@+id/mainContent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/currentPlayerCard">
+            android:padding="@dimen/screen_margin"
+            android:minHeight="200dp">
 
-            <TextView
-                android:id="@+id/guessSongText"
+            <!-- Content Container -->
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="0dp"
-                android:layout_height="80dp"
-                android:text="Guess the song!"
-                android:textColor="@color/white"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:visibility="visible"
+                android:layout_height="wrap_content"
+                android:maxWidth="@dimen/content_max_width"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <!-- Current Player Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/currentPlayerCard"
+                    style="@style/Widget.Musick.Card.Player"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/spacing_lg"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/spacing_md">
+
+                        <TextView
+                            android:id="@+id/currentPlayerText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:text="Player 1"
+                            android:textAppearance="@style/TextAppearance.Musick.HeadlineMedium"
+                            android:textColor="@color/text_on_primary"
+                            android:layout_marginEnd="@dimen/spacing_md"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toStartOf="@id/skipButton"
+                            tools:text="Player 1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/skipButton"
+                            style="@style/Widget.Musick.Button.Secondary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Skip"
+                            android:textColor="@color/text_on_primary"
+                            app:strokeColor="@color/text_on_primary"
+                            app:iconTint="@color/text_on_primary"
+                            app:icon="@drawable/ic_arrow_back"
+                            app:iconGravity="textStart"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Song Information Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/songInfoCard"
+                    style="@style/Widget.Musick.Card"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    app:layout_constraintTop_toBottomOf="@id/currentPlayerCard"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/songInfoLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/spacing_lg"
+                        android:minHeight="80dp">
+
+                        <TextView
+                            android:id="@+id/guessSongText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:text="Guess the song!"
+                            android:textAppearance="@style/TextAppearance.Musick.HeadlineLarge"
+                            android:textColor="@color/text_primary"
+                            android:gravity="center"
+                            android:visibility="visible"
+                            android:minHeight="60dp"
+                            android:layout_marginVertical="@dimen/spacing_md"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent" />
+
+                        <TextView
+                            android:id="@+id/songNameText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.Musick.HeadlineLarge"
+                            android:textColor="@color/text_primary"
+                            android:gravity="center"
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            app:autoSizeTextType="uniform"
+                            app:autoSizeMinTextSize="16sp"
+                            app:autoSizeMaxTextSize="28sp"
+                            app:autoSizeStepGranularity="2sp"
+                            android:visibility="gone"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            tools:text="Really Long Song Name That Might Wrap" />
+
+                        <TextView
+                            android:id="@+id/artistNameText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/spacing_sm"
+                            android:textAppearance="@style/TextAppearance.Musick.TitleLarge"
+                            android:textColor="@color/text_secondary"
+                            android:gravity="center"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            app:autoSizeTextType="uniform"
+                            app:autoSizeMinTextSize="14sp"
+                            app:autoSizeMaxTextSize="18sp"
+                            app:autoSizeStepGranularity="1sp"
+                            android:visibility="gone"
+                            app:layout_constraintTop_toBottomOf="@id/songNameText"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            tools:text="Artist Name" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Album Cover / Vinyl Container -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/albumCoverContainer"
+                    android:layout_width="@dimen/vinyl_size_medium"
+                    android:layout_height="@dimen/vinyl_size_medium"
+                    android:layout_marginTop="@dimen/spacing_xl"
+                    app:layout_constraintTop_toBottomOf="@id/songInfoCard"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <!-- Vinyl Record Button -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/buzzerButton"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:src="@drawable/vinyl_record"
+                        android:contentDescription="@string/buzzer"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:shapeAppearanceOverlay="@style/CircularImageView"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                    <!-- Play/Pause Icons -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/playIcon"
+                        android:layout_width="@dimen/icon_size_large"
+                        android:layout_height="@dimen/icon_size_large"
+                        android:visibility="gone"
+                        android:src="@drawable/play"
+                        android:contentDescription="Play Icon"
+                        app:tint="@color/text_primary"
+                        android:clickable="false"
+                        android:focusable="false"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/pauseIcon"
+                        android:layout_width="@dimen/icon_size_large"
+                        android:layout_height="@dimen/icon_size_large"
+                        android:visibility="visible"
+                        android:src="@drawable/pause"
+                        android:contentDescription="Pause Icon"
+                        app:tint="@color/text_primary"
+                        android:clickable="false"
+                        android:focusable="false"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+                    <!-- Album Artwork -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/albumArtworkImageView"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:visibility="gone"
+                        android:scaleType="centerCrop"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:shapeAppearanceOverlay="@style/CircularImageView"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        tools:src="@tools:sample/avatars" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <!-- Control Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/controlButton"
+                    style="@style/Widget.Musick.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:text="Reveal"
+                    android:visibility="invisible"
+                    app:icon="@drawable/ic_settings"
+                    app:layout_constraintTop_toBottomOf="@id/albumCoverContainer"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Song Progress Bar -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/songProgressBar"
+                    style="@style/Widget.Musick.ProgressBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_lg"
+                    android:max="1000"
+                    android:progress="0"
+                    app:layout_constraintTop_toBottomOf="@id/controlButton"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Scores Section -->
+                <TextView
+                    android:id="@+id/scoreText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_xl"
+                    android:text="Scores"
+                    android:textAppearance="@style/TextAppearance.Musick.HeadlineMedium"
+                    android:textColor="@color/text_primary"
+                    app:layout_constraintTop_toBottomOf="@id/songProgressBar"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/playerScoresRecyclerView"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:layout_marginBottom="@dimen/spacing_xl"
+                    android:nestedScrollingEnabled="false"
+                    app:layout_constraintTop_toBottomOf="@id/scoreText"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Loading Overlay -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/overlay_dark"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_3"
+            android:padding="@dimen/spacing_xl"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:id="@+id/loadingProgressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                app:indicatorColor="@color/spotify_green"
+                app:trackColor="@color/surface_variant"
+                app:indicatorSize="48dp"
+                app:trackThickness="4dp"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
             <TextView
-                android:id="@+id/songNameText"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:textColor="@color/white"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:maxLines="1"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="12sp"
-                app:autoSizeMaxTextSize="28sp"
-                app:autoSizeStepGranularity="2sp"
-                android:visibility="gone"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                tools:text="Song Name" />
-
-            <TextView
-                android:id="@+id/artistNameText"
-                android:layout_width="0dp"
-                android:layout_height="34dp"
-                android:layout_marginTop="8dp"
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:gravity="center"
-                android:maxLines="1"
-                app:autoSizeTextType="uniform"
-                app:autoSizeMinTextSize="10sp"
-                app:autoSizeMaxTextSize="24sp"
-                app:autoSizeStepGranularity="2sp"
-                android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/songNameText"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                tools:text="Artist Name" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <FrameLayout
-            android:id="@+id/albumCoverContainer"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="24dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/songInfoLayout">
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/buzzerButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/vinyl_record"
-                    android:contentDescription="BUZZER"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/playIcon"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_gravity="center"
-                    android:visibility="gone"
-                    android:src="@drawable/play"
-                    android:contentDescription="Play Icon"
-                    android:clickable="false"
-                    android:focusable="false" />
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/pauseIcon"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_gravity="center"
-                    android:visibility="visible"
-                    android:src="@drawable/pause"
-                    android:contentDescription="Play Icon"
-                    android:clickable="false"
-                    android:focusable="false" />
-
-            </FrameLayout>
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/albumArtworkImageView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"
-                app:shapeAppearanceOverlay="@style/CircularImageView"
-                tools:src="@tools:sample/avatars" />
-
-        </FrameLayout>
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/revealButtonContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/albumCoverContainer" >
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/controlButton"
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:elevation="8dp"
-                android:text="Reveal"
-                android:textSize="12sp"
-                android:visibility="invisible"
-                app:cornerRadius="8dp"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                 />
-
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-
-        <ProgressBar
-            android:id="@+id/songProgressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:max="1000"
-            android:progress="0"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/revealButtonContainer" />
-
-        <TextView
-            android:id="@+id/scoreText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Scores"
-            android:textColor="@color/white"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/songProgressBar" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/playerScoresRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/scoreText" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <FrameLayout
-        android:id="@+id/loadingOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
-
-            <ProgressBar
-                android:id="@+id/loadingProgressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminateTint="@color/spotify_green"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
-
-            <TextView
                 android:id="@+id/loadingText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:textColor="@color/white"
-                android:textSize="16sp"
+                android:layout_marginTop="@dimen/spacing_md"
                 android:text="Connecting to Spotify"
+                android:textAppearance="@style/TextAppearance.Musick.TitleLarge"
+                android:textColor="@color/text_primary"
                 app:layout_constraintTop_toBottomOf="@id/loadingProgressBar"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintEnd_toEndOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </FrameLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
