@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Button Styles -->
-    <style name="Widget.Musick.Button" parent="Widget.Material3.Button">
+    <style name="Widget.Musick.Button" parent="Widget.MaterialComponents.Button">
         <item name="android:textColor">@color/text_on_primary</item>
         <item name="backgroundTint">@color/spotify_green</item>
         <item name="cornerRadius">@dimen/button_corner_radius</item>
@@ -16,7 +16,7 @@
         <item name="android:textSize">@dimen/text_title_large</item>
     </style>
     
-    <style name="Widget.Musick.Button.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+    <style name="Widget.Musick.Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
         <item name="android:textColor">@color/text_primary</item>
         <item name="strokeColor">@color/surface_variant</item>
         <item name="cornerRadius">@dimen/button_corner_radius</item>
@@ -25,7 +25,7 @@
     </style>
     
     <!-- Card Styles -->
-    <style name="Widget.Musick.Card" parent="Widget.Material3.CardView.Elevated">
+    <style name="Widget.Musick.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">@dimen/card_corner_radius</item>
         <item name="cardElevation">@dimen/card_elevation</item>
         <item name="cardBackgroundColor">@color/surface</item>
@@ -38,10 +38,9 @@
     </style>
     
     <!-- Text Input Styles -->
-    <style name="Widget.Musick.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <style name="Widget.Musick.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxBackgroundColor">@color/surface_variant</item>
         <item name="boxStrokeColor">@color/spotify_green</item>
-        <item name="boxStrokeColorFocused">@color/spotify_green_light</item>
         <item name="hintTextColor">@color/text_secondary</item>
         <item name="android:textColorHint">@color/text_secondary</item>
         <item name="boxCornerRadiusTopStart">@dimen/button_corner_radius</item>
@@ -51,45 +50,43 @@
     </style>
     
     <!-- Typography Styles -->
-    <style name="TextAppearance.Musick.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+    <style name="TextAppearance.Musick.DisplayLarge" parent="TextAppearance.MaterialComponents.Headline1">
         <item name="android:textSize">@dimen/text_display_large</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="fontWeight">700</item>
     </style>
     
-    <style name="TextAppearance.Musick.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+    <style name="TextAppearance.Musick.DisplayMedium" parent="TextAppearance.MaterialComponents.Headline2">
         <item name="android:textSize">@dimen/text_display_medium</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="fontWeight">600</item>
     </style>
     
-    <style name="TextAppearance.Musick.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+    <style name="TextAppearance.Musick.HeadlineLarge" parent="TextAppearance.MaterialComponents.Headline3">
         <item name="android:textSize">@dimen/text_headline_large</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <style name="TextAppearance.Musick.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+    <style name="TextAppearance.Musick.HeadlineMedium" parent="TextAppearance.MaterialComponents.Headline4">
         <item name="android:textSize">@dimen/text_headline_medium</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <style name="TextAppearance.Musick.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+    <style name="TextAppearance.Musick.TitleLarge" parent="TextAppearance.MaterialComponents.Headline5">
         <item name="android:textSize">@dimen/text_title_large</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     
-    <style name="TextAppearance.Musick.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+    <style name="TextAppearance.Musick.BodyLarge" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:textSize">@dimen/text_body_large</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
     
-    <style name="TextAppearance.Musick.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+    <style name="TextAppearance.Musick.LabelLarge" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">@dimen/text_label_large</item>
         <item name="android:textColor">@color/text_tertiary</item>
         <item name="android:fontFamily">sans-serif-medium</item>
@@ -107,14 +104,13 @@
     </style>
     
     <!-- Progress Bar Style -->
-    <style name="Widget.Musick.ProgressBar" parent="Widget.Material3.LinearProgressIndicator">
-        <item name="indicatorColor">@color/spotify_green</item>
-        <item name="trackColor">@color/surface_variant</item>
-        <item name="trackCornerRadius">4dp</item>
+    <style name="Widget.Musick.ProgressBar" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:progressTint">@color/spotify_green</item>
+        <item name="android:progressBackgroundTint">@color/surface_variant</item>
     </style>
     
     <!-- Floating Action Button Style -->
-    <style name="Widget.Musick.FloatingActionButton" parent="Widget.Material3.FloatingActionButton.Large">
+    <style name="Widget.Musick.FloatingActionButton" parent="Widget.MaterialComponents.FloatingActionButton">
         <item name="backgroundTint">@color/spotify_green</item>
         <item name="tint">@color/text_on_primary</item>
         <item name="elevation">8dp</item>
