@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var loginContainer: ConstraintLayout
     private lateinit var loginButton: MaterialButton
+    private lateinit var scrollView: NestedScrollView
     private lateinit var mainContent: ViewGroup
     private lateinit var loginRequiredMessage: TextView
     private lateinit var appDescriptionTextView: TextView
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         playlistHistoryRecyclerView = findViewById(R.id.playlistHistoryRecyclerView)
         loginContainer = findViewById(R.id.loginContainer)
         loginButton = findViewById(R.id.loginButton)
+        scrollView = findViewById(R.id.scrollView)
         mainContent = findViewById(R.id.mainContent)
         loginRequiredMessage = findViewById(R.id.loginRequiredMessage)
         appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
@@ -126,21 +129,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLoadingState() {
         loginContainer.visibility = View.GONE
-        mainContent.visibility = View.GONE
+        scrollView.visibility = View.GONE
         loadingIndicator.visibility = View.VISIBLE
         loadingStatusText.visibility = View.VISIBLE
     }
 
     private fun showLoginRequired() {
         loginContainer.visibility = View.VISIBLE
-        mainContent.visibility = View.GONE
+        scrollView.visibility = View.GONE
         loadingIndicator.visibility = View.GONE
         loadingStatusText.visibility = View.GONE
     }
 
     private fun showMainContent() {
         loginContainer.visibility = View.GONE
-        mainContent.visibility = View.VISIBLE
+        scrollView.visibility = View.VISIBLE
         loadingIndicator.visibility = View.GONE
         loadingStatusText.visibility = View.GONE
     }
