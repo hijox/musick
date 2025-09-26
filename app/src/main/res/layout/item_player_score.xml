@@ -1,81 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Musick.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="4dp"
-    app:cardBackgroundColor="@color/dark_gray"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginVertical="@dimen/spacing_xs">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="4dp">
+        android:padding="@dimen/spacing_md">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/minusOneButton"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="35dp"
-            android:layout_height="35dp"
-            android:layout_marginStart="0dp"
-            android:insetLeft="0dp"
-            android:insetTop="0dp"
-            android:insetRight="0dp"
-            android:insetBottom="0dp"
-            android:gravity="center"
-            android:backgroundTint="@color/red"
-            app:cornerRadius="8dp"
-            app:strokeColor="@color/red"
-            app:iconGravity="textEnd"
-            app:iconPadding="0dp"
-            app:icon="@drawable/ic_minus"
-            app:iconSize="20dp"
-            app:iconTint="@color/white" />
-
+        <!-- Player Name -->
         <TextView
             android:id="@+id/playerNameText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textAlignment="textEnd" />
+            android:text="Player Name"
+            android:textAppearance="@style/TextAppearance.Musick.TitleLarge"
+            android:textColor="@color/text_primary"
+            android:layout_marginEnd="@dimen/spacing_md"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/scoreContainer" />
 
-        <TextView
-            android:id="@+id/scoreText"
-            android:layout_width="0dp"
+        <!-- Score Container -->
+        <LinearLayout
+            android:id="@+id/scoreContainer"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/plusOneButton"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="35dp"
-            android:layout_height="35dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="0dp"
-            android:insetLeft="0dp"
-            android:insetTop="0dp"
-            android:insetRight="0dp"
-            android:insetBottom="0dp"
-            android:gravity="center"
-            android:layout_gravity="end"
-            android:backgroundTint="@color/spotify_green"
-            app:cornerRadius="8dp"
-            app:strokeColor="@color/spotify_green"
-            app:iconPadding="0dp"
-            app:iconGravity="textEnd"
-            app:icon="@drawable/ic_plus"
-            app:iconSize="20dp"
-            app:iconTint="@color/white" />
+            <!-- Minus Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/minusOneButton"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Decrease score"
+                app:backgroundTint="@color/error"
+                app:icon="@drawable/ic_minus"
+                app:iconSize="18dp"
+                app:iconTint="@color/text_on_primary" />
 
-    </LinearLayout>
-</androidx.cardview.widget.CardView>
+            <!-- Score Text -->
+            <TextView
+                android:id="@+id/scoreText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/spacing_md"
+                android:text="0"
+                android:textAppearance="@style/TextAppearance.Musick.HeadlineMedium"
+                android:textColor="@color/text_primary"
+                android:minWidth="32dp"
+                android:gravity="center" />
+
+            <!-- Plus Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/plusOneButton"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Increase score"
+                app:backgroundTint="@color/success"
+                app:icon="@drawable/ic_plus"
+                app:iconSize="18dp"
+                app:iconTint="@color/text_on_primary" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>
