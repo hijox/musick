@@ -43,13 +43,12 @@
             app:layout_constraintVertical_bias="0.3">
 
             <!-- Logo -->
-            <com.google.android.material.imageview.ShapeableImageView
+            <ImageView
                 android:id="@+id/logoImageViewLogin"
                 android:layout_width="@dimen/logo_size_large"
                 android:layout_height="@dimen/logo_size_large"
                 android:src="@drawable/app_logo"
                 android:contentDescription="@string/app_logo"
-                app:shapeAppearanceOverlay="@style/CircularImageView"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -138,14 +137,13 @@
                 app:layout_constraintEnd_toEndOf="parent">
 
                 <!-- Logo -->
-                <com.google.android.material.imageview.ShapeableImageView
+                <ImageView
                     android:id="@+id/logoImageView"
                     android:layout_width="@dimen/logo_size_medium"
                     android:layout_height="@dimen/logo_size_medium"
                     android:src="@drawable/app_logo"
                     android:contentDescription="@string/app_logo"
                     android:layout_marginTop="@dimen/spacing_xxl"
-                    app:shapeAppearanceOverlay="@style/CircularImageView"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
@@ -193,9 +191,7 @@
                             style="@style/Widget.Musick.TextInputLayout"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/enter_spotify_playlist_link"
-                            app:startIconDrawable="@drawable/ic_spotify_logo"
-                            app:startIconTint="@color/spotify_green">
+                            android:hint="@string/enter_spotify_playlist_link">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/playlistLinkInput"
@@ -271,15 +267,12 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <com.google.android.material.progressindicator.CircularProgressIndicator
+            <ProgressBar
                 android:id="@+id/loadingIndicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:indeterminate="true"
-                app:indicatorColor="@color/spotify_green"
-                app:trackColor="@color/surface_variant"
-                app:indicatorSize="48dp"
-                app:trackThickness="4dp"
+                android:indeterminateTint="@color/spotify_green"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
