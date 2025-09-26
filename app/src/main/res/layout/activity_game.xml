@@ -169,7 +169,7 @@
                     app:layout_constraintEnd_toEndOf="parent">
 
                     <!-- Vinyl Record Button -->
-                    <com.google.android.material.imageview.ShapeableImageView
+                    <ImageView
                         android:id="@+id/buzzerButton"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
@@ -178,14 +178,13 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        app:shapeAppearanceOverlay="@style/CircularImageView"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
                     <!-- Play/Pause Icons -->
-                    <com.google.android.material.imageview.ShapeableImageView
+                    <ImageView
                         android:id="@+id/playIcon"
                         android:layout_width="@dimen/icon_size_large"
                         android:layout_height="@dimen/icon_size_large"
@@ -200,7 +199,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
-                    <com.google.android.material.imageview.ShapeableImageView
+                    <ImageView
                         android:id="@+id/pauseIcon"
                         android:layout_width="@dimen/icon_size_large"
                         android:layout_height="@dimen/icon_size_large"
@@ -216,7 +215,7 @@
                         app:layout_constraintEnd_toEndOf="parent" />
 
                     <!-- Album Artwork -->
-                    <com.google.android.material.imageview.ShapeableImageView
+                    <ImageView
                         android:id="@+id/albumArtworkImageView"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
@@ -225,7 +224,6 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        app:shapeAppearanceOverlay="@style/CircularImageView"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -249,7 +247,7 @@
                     app:layout_constraintEnd_toEndOf="parent" />
 
                 <!-- Song Progress Bar -->
-                <com.google.android.material.progressindicator.LinearProgressIndicator
+                <ProgressBar
                     android:id="@+id/songProgressBar"
                     style="@style/Widget.Musick.ProgressBar"
                     android:layout_width="0dp"
@@ -312,15 +310,12 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <com.google.android.material.progressindicator.CircularProgressIndicator
+            <ProgressBar
                 android:id="@+id/loadingProgressBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:indeterminate="true"
-                app:indicatorColor="@color/spotify_green"
-                app:trackColor="@color/surface_variant"
-                app:indicatorSize="48dp"
-                app:trackThickness="4dp"
+                android:indeterminateTint="@color/spotify_green"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
