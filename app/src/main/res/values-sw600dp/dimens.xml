@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablet-specific dimensions for screens wider than 600dp -->
+    
+    <!-- Increased spacing for larger screens -->
+    <dimen name="spacing_lg">32dp</dimen>
+    <dimen name="spacing_xl">48dp</dimen>
+    <dimen name="spacing_xxl">64dp</dimen>
+    
+    <!-- Larger text sizes -->
+    <dimen name="text_display_large">56sp</dimen>
+    <dimen name="text_display_medium">40sp</dimen>
+    <dimen name="text_headline_large">32sp</dimen>
+    <dimen name="text_headline_medium">28sp</dimen>
+    
+    <!-- Larger component dimensions -->
+    <dimen name="button_height_large">64dp</dimen>
+    <dimen name="button_height_medium">56dp</dimen>
+    
+    <dimen name="logo_size_large">160dp</dimen>
+    <dimen name="logo_size_medium">120dp</dimen>
+    
+    <dimen name="vinyl_size_large">320dp</dimen>
+    <dimen name="vinyl_size_medium">280dp</dimen>
+    <dimen name="vinyl_size_small">200dp</dimen>
+    
+    <dimen name="icon_size_large">56dp</dimen>
+    <dimen name="icon_size_medium">40dp</dimen>
+    
+    <!-- Larger margins for tablets -->
+    <dimen name="screen_margin">32dp</dimen>
+    <dimen name="content_max_width">800dp</dimen>
+</resources>
