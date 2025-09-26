@@ -40,13 +40,21 @@
             <!-- Minus Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/minusOneButton"
-                style="@style/Widget.Material3.Button.IconButton.Filled"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Decrease score"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 app:backgroundTint="@color/error"
                 app:icon="@drawable/ic_minus"
                 app:iconSize="18dp"
+                app:iconGravity="textEnd"
+                app:iconPadding="0dp"
                 app:iconTint="@color/text_on_primary" />
 
             <!-- Score Text -->
@@ -64,13 +72,21 @@
             <!-- Plus Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/plusOneButton"
-                style="@style/Widget.Material3.Button.IconButton.Filled"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:contentDescription="Increase score"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 app:backgroundTint="@color/success"
                 app:icon="@drawable/ic_plus"
                 app:iconSize="18dp"
+                app:iconGravity="textEnd"
+                app:iconPadding="0dp"
                 app:iconTint="@color/text_on_primary" />
 
         </LinearLayout>
