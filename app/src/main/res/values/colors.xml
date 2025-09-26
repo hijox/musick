@@ -1,13 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Primary Brand Colors -->
+    <color name="spotify_green">#1DB954</color>
+    <color name="spotify_green_dark">#189443</color>
+    <color name="spotify_green_light">#1ED760</color>
+    
+    <!-- Background Colors -->
+    <color name="background_primary">#000000</color>
+    <color name="background_secondary">#121212</color>
+    <color name="background_tertiary">#181818</color>
+    <color name="surface">#1E1E1E</color>
+    <color name="surface_variant">#2A2A2A</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_tertiary">#6A6A6A</color>
+    <color name="text_on_surface">#FFFFFF</color>
+    <color name="text_on_primary">#000000</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent_blue">#1E90FF</color>
+    <color name="accent_orange">#FF6B35</color>
+    <color name="accent_purple">#8B5CF6</color>
+    <color name="accent_pink">#EC4899</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#22C55E</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
+    
+    <!-- Semi-transparent overlays -->
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_light">#40FFFFFF</color>
+    
+    <!-- Legacy colors for compatibility -->
     <color name="black">#FF000000</color>
     <color name="spotify_black">#191414</color>
     <color name="spotify_dark_gray">#121212</color>
-    <color name="spotify_green">#1DB954</color>
     <color name="white">#FFFFFF</color>
     <color name="dark_gray">#2A2A2A</color>
     <color name="gray">#B3B3B3</color>
-    <color name="red">#56B91D97</color>
+    <color name="red">#EF4444</color>
     <color name="spotify_white">#FFFFFF</color>
     <color name="buzzer_alt">#11662F</color>
 </resources>
