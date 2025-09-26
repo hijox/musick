@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appDescriptionTextView: TextView
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var loadingStatusText: TextView
+    private lateinit var settingsButton: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,11 +78,16 @@ class MainActivity : AppCompatActivity() {
         appDescriptionTextView = findViewById(R.id.appDescriptionTextView)
         loadingIndicator = findViewById(R.id.loadingIndicator)
         loadingStatusText = findViewById(R.id.loadingStatusText)
+        settingsButton = findViewById(R.id.settingsButton)
     }
 
     private fun setupClickListeners() {
         startGameButton.setOnClickListener { startGame() }
         loginButton.setOnClickListener { initiateSpotifyLogin() }
+        settingsButton.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun setupLoginScreen() {

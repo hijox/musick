@@ -7,6 +7,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -29,7 +31,6 @@ import com.spotify.protocol.types.Track
 import com.spotify.protocol.types.ImageUri
 import com.example.musick.SpotifyManager.spotifyAppRemote
 import com.google.android.material.imageview.ShapeableImageView
-import com.example.musick.utils.SafeHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,8 +72,11 @@ class GameActivity : AppCompatActivity() {
 
     private var albumArtCache = mutableMapOf<ImageUri, Bitmap>()
 
-    private val safeHandler = SafeHandler(this)
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
+
+    private var isApplyingRandomStart = false
+    private var currentRandomStartAttempt = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -258,11 +262,159 @@ class GameActivity : AppCompatActivity() {
             spotifyAppRemote?.playerApi?.let { playerApi ->
                 playerApi.setShuffle(true)
                 playerApi.play("spotify:playlist:$playlistId")
-                startSong()
+
+                // Apply random start if enabled - simple and direct
+                if (SettingsActivity.isRandomStartEnabled(this)) {
+                    applyRandomStart()
+                } else {
+                    startSong()
+                }
             }
         } catch (e: Exception) {
             Log.e("GameActivity", "Error playing playlist", e)
             showErrorToast("Failed to play playlist")
+        }
+    }
+
+    private fun applyRandomStart() {
+        // Prevent multiple simultaneous random start attempts
+        if (isApplyingRandomStart) {
+            Log.d("GameActivity", "Random start already in progress, skipping")
+            return
+        }
+
+        isApplyingRandomStart = true
+        currentRandomStartAttempt = 0
+
+        // Start polling immediately for track info
+        pollForTrackAndSeek(0, 50) // Start with 0 attempts, 50ms intervals
+    }
+
+    private fun pollForTrackAndSeek(attempts: Int, intervalMs: Long) {
+        if (isFinishing || isDestroyed) {
+            isApplyingRandomStart = false
+            return
+        }
+
+        // Maximum attempts to prevent infinite polling (10 seconds total)
+        val maxAttempts = (10000 / intervalMs).toInt()
+
+        if (attempts >= maxAttempts) {
+            Log.w("GameActivity", "Random start failed after ${attempts} attempts")
+            isApplyingRandomStart = false
+            startSong()
+            return
+        }
+
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                val track = playerState?.track
+
+                if (track != null && track.duration > 0) {
+                    // Track is loaded! Calculate and seek to random position
+                    val songDuration = track.duration
+                    val firstThirdDuration = songDuration / 3
+                    val minStartPosition = 10000L // 10 seconds minimum
+                    val maxStartPosition = maxOf(minStartPosition, firstThirdDuration)
+                    val randomPosition = (minStartPosition..maxStartPosition).random()
+
+                    Log.d("GameActivity", "Track loaded: ${track.name}, duration: ${songDuration}ms")
+                    Log.d("GameActivity", "Seeking to random position: ${randomPosition}ms (${randomPosition/1000}s)")
+
+                    // Seek to random position with verification
+                    spotifyAppRemote?.playerApi?.seekTo(randomPosition)?.setResultCallback {
+                        Log.d("GameActivity", "Seek command successful")
+
+                        // Verify the seek actually worked by checking position after a brief delay
+                        val verifyRunnable = Runnable {
+                            verifySeekSuccess(randomPosition)
+                        }
+                        mainHandler.postDelayed(verifyRunnable, 300)
+
+                    }?.setErrorCallback { error ->
+                        Log.e("GameActivity", "Seek command failed: ${error.message}")
+                        isApplyingRandomStart = false
+                        startSong()
+                    }
+
+                } else {
+                    // Track not ready yet, poll again with exponential backoff
+                    val nextInterval = if (attempts < 10) intervalMs else minOf(intervalMs * 2, 500L)
+
+                    Log.d("GameActivity", "Track not ready (attempt ${attempts + 1}), retrying in ${nextInterval}ms")
+
+                    val pollRunnable = Runnable {
+                        pollForTrackAndSeek(attempts + 1, nextInterval)
+                    }
+                    mainHandler.postDelayed(pollRunnable, nextInterval)
+                }
+
+            }?.setErrorCallback { error ->
+                Log.e("GameActivity", "Failed to get player state: ${error.message}")
+                // API call failed, retry with longer interval
+                val retryRunnable = Runnable {
+                    pollForTrackAndSeek(attempts + 1, intervalMs * 2)
+                }
+                mainHandler.postDelayed(retryRunnable, intervalMs * 2)
+            }
+
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error in pollForTrackAndSeek", e)
+            isApplyingRandomStart = false
+            startSong()
+        }
+    }
+
+    private fun verifySeekSuccess(expectedPosition: Long) {
+        if (isFinishing || isDestroyed) {
+            isApplyingRandomStart = false
+            return
+        }
+
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                val currentPosition = playerState?.playbackPosition ?: 0L
+                val positionDiff = kotlin.math.abs(currentPosition - expectedPosition)
+
+                Log.d("GameActivity", "Seek verification - Expected: ${expectedPosition/1000}s, Actual: ${currentPosition/1000}s, Diff: ${positionDiff/1000}s")
+
+                if (positionDiff < 5000) { // Within 5 seconds is acceptable
+                    Log.d("GameActivity", "Seek verification successful")
+                    isApplyingRandomStart = false
+                    startSong()
+                } else {
+                    Log.w("GameActivity", "Seek verification failed, retrying...")
+                    // Try seeking again if we have attempts left
+                    if (currentRandomStartAttempt < 3) {
+                        currentRandomStartAttempt++
+
+                        val retryRunnable = Runnable {
+                            spotifyAppRemote?.playerApi?.seekTo(expectedPosition)?.setResultCallback {
+                                val verifyAgainRunnable = Runnable {
+                                    verifySeekSuccess(expectedPosition)
+                                }
+                                mainHandler.postDelayed(verifyAgainRunnable, 300)
+                            }?.setErrorCallback {
+                                isApplyingRandomStart = false
+                                startSong()
+                            }
+                        }
+                        mainHandler.postDelayed(retryRunnable, 200)
+                    } else {
+                        Log.e("GameActivity", "Seek failed after multiple attempts, starting normally")
+                        isApplyingRandomStart = false
+                        startSong()
+                    }
+                }
+            }?.setErrorCallback {
+                Log.e("GameActivity", "Failed to verify seek position")
+                isApplyingRandomStart = false
+                startSong()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error verifying seek success", e)
+            isApplyingRandomStart = false
+            startSong()
         }
     }
 
@@ -425,10 +577,22 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun skipSong() {
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
         resetForNewSong()
+
         try {
             spotifyAppRemote?.playerApi?.skipNext()
-            startSong()
+
+            if (SettingsActivity.isRandomStartEnabled(this)) {
+                applyRandomStart()
+            } else {
+                startSong()
+            }
         } catch (e: Exception) {
             Log.e("GameActivity", "Error skipping song", e)
             showErrorToast("Failed to skip song")
@@ -436,12 +600,24 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun nextTurn() {
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
         currentPlayerIndex = (currentPlayerIndex + 1) % playerNames.size
         updateCurrentPlayer()
         resetForNewSong()
+
         try {
             spotifyAppRemote?.playerApi?.skipNext()
-            startSong()
+
+            if (SettingsActivity.isRandomStartEnabled(this)) {
+                applyRandomStart()
+            } else {
+                startSong()
+            }
         } catch (e: Exception) {
             Log.e("GameActivity", "Error in next turn", e)
             showErrorToast("Failed to skip to next song")
@@ -459,6 +635,19 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun resetForNewSong() {
+        // Clear random start flag
+        isApplyingRandomStart = false
+        currentRandomStartAttempt = 0
+
+        // IMMEDIATE progress bar reset - force UI update right now
+        runOnUiThread {
+            songProgressBar.progress = 0
+        }
+
+        // Stop all updates immediately
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null)
+
         // Stop animation cleanly
         pauseSpinningAnimation()
 
@@ -470,10 +659,8 @@ class GameActivity : AppCompatActivity() {
         songNameText.visibility = View.GONE
         artistNameText.visibility = View.GONE
         albumArtCache.clear()
-        stopProgressBarUpdateSafe()
-        songProgressBar.progress = 0
 
-        // Reset rotation to 0 for new song and restart animation
+        // Reset rotation to 0 for new song
         lastRotation = 0f
         buzzerButton.rotation = 0f
 
@@ -609,12 +796,6 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun stopProgressBarUpdateSafe() {
-        isProgressBarUpdating = false
-        safeHandler.removeCallbacks()
-        cleanupSpotifySubscriptions()
-    }
-
     private fun updateProgressBarSafe() {
         if (!isProgressBarUpdating || isFinishing || isDestroyed) return
 
@@ -628,6 +809,7 @@ class GameActivity : AppCompatActivity() {
                         val songDuration = track.duration
                         val currentProgress = playerState.playbackPosition
                         val progress = ((currentProgress.toFloat() / songDuration.toFloat()) * 1000).toInt()
+
                         runOnUiThread {
                             try {
                                 if (!isFinishing && !isDestroyed) {
@@ -645,15 +827,24 @@ class GameActivity : AppCompatActivity() {
                 Log.e("GameActivity", "Error getting player state: ${throwable.message}")
             }
 
-            safeHandler.post(1000) { updateProgressBarSafe() }
+            val progressRunnable = Runnable {
+                updateProgressBarSafe()
+            }
+            mainHandler.postDelayed(progressRunnable, 1000)
         } catch (e: Exception) {
             Log.e("GameActivity", "Error setting up progress bar update", e)
         }
     }
 
+    private fun stopProgressBarUpdateSafe() {
+        isProgressBarUpdating = false
+        mainHandler.removeCallbacksAndMessages(null) // Clear all pending handlers
+        cleanupSpotifySubscriptions()
+    }
+
     private fun cleanupSpotifySubscriptions() {
         try {
-            safeHandler.removeCallbacks()
+            mainHandler.removeCallbacksAndMessages(null)
         } catch (e: Exception) {
             Log.e("GameActivity", "Error cleaning up callbacks", e)
         }
@@ -703,9 +894,10 @@ class GameActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        mainHandler.removeCallbacksAndMessages(null)
         stopProgressBarUpdateSafe()
         cleanupSpotifySubscriptions()
-        safeHandler.removeCallbacks()
 
         try {
             if (::spinningAnimator.isInitialized) {
