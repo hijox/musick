@@ -78,6 +78,13 @@ class GameActivity : AppCompatActivity() {
     private var isApplyingRandomStart = false
     private var currentRandomStartAttempt = 0
 
+    // Pulse animation properties
+    private var pausePulseAnimator: ValueAnimator? = null
+    private var playPulseAnimator: ValueAnimator? = null
+    private var baseIconScale = 1.0f
+    private val pulseScale = 1.15f // 15% larger at peak
+    private val pulseDuration = 1000L // 1 second per pulse
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
@@ -88,6 +95,7 @@ class GameActivity : AppCompatActivity() {
         setupListeners()
         setupProgressBar()
         setupSpinningAnimation()
+        setupPulseAnimations()
 
         showLoading("Connecting to Spotify")
         ensureSpotifyConnection()
@@ -139,6 +147,95 @@ class GameActivity : AppCompatActivity() {
         loadingOverlay = findViewById(R.id.loadingOverlay)
         loadingProgressBar = findViewById(R.id.loadingProgressBar)
         loadingText = findViewById(R.id.loadingText)
+    }
+
+    private fun setupPulseAnimations() {
+        try {
+            // Setup pause icon pulse animation
+            pausePulseAnimator = ValueAnimator.ofFloat(baseIconScale, pulseScale, baseIconScale).apply {
+                duration = pulseDuration
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = androidx.interpolator.view.animation.FastOutSlowInInterpolator()
+                addUpdateListener { animator ->
+                    try {
+                        if (!isFinishing && !isDestroyed) {
+                            val scale = animator.animatedValue as Float
+                            pauseIcon.scaleX = scale
+                            pauseIcon.scaleY = scale
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GameActivity", "Error in pause pulse animation update", e)
+                    }
+                }
+            }
+
+            // Setup play icon pulse animation (same timing for smooth transition)
+            playPulseAnimator = ValueAnimator.ofFloat(baseIconScale, pulseScale, baseIconScale).apply {
+                duration = pulseDuration
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = androidx.interpolator.view.animation.FastOutSlowInInterpolator()
+                addUpdateListener { animator ->
+                    try {
+                        if (!isFinishing && !isDestroyed) {
+                            val scale = animator.animatedValue as Float
+                            playIcon.scaleX = scale
+                            playIcon.scaleY = scale
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GameActivity", "Error in play pulse animation update", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error setting up pulse animations", e)
+        }
+    }
+
+    private fun startPausePulse() {
+        try {
+            // Stop play pulse if running
+            playPulseAnimator?.cancel()
+            playIcon.scaleX = baseIconScale
+            playIcon.scaleY = baseIconScale
+
+            // Start pause pulse
+            if (pausePulseAnimator?.isRunning != true) {
+                pausePulseAnimator?.start()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error starting pause pulse", e)
+        }
+    }
+
+    private fun startPlayPulse() {
+        try {
+            // Stop pause pulse if running
+            pausePulseAnimator?.cancel()
+            pauseIcon.scaleX = baseIconScale
+            pauseIcon.scaleY = baseIconScale
+
+            // Start play pulse
+            if (playPulseAnimator?.isRunning != true) {
+                playPulseAnimator?.start()
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error starting play pulse", e)
+        }
+    }
+
+    private fun stopAllPulseAnimations() {
+        try {
+            pausePulseAnimator?.cancel()
+            playPulseAnimator?.cancel()
+            
+            // Reset scales
+            pauseIcon.scaleX = baseIconScale
+            pauseIcon.scaleY = baseIconScale
+            playIcon.scaleX = baseIconScale
+            playIcon.scaleY = baseIconScale
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error stopping pulse animations", e)
+        }
     }
 
     private fun ensureSpotifyConnection() {
@@ -232,6 +329,7 @@ class GameActivity : AppCompatActivity() {
             pauseIcon.visibility = View.VISIBLE
             playIcon.visibility = View.GONE
             startSpinningAnimation()
+            startPausePulse()
             updateButtonStates()
             startProgressBarUpdateSafe()
 
@@ -249,6 +347,7 @@ class GameActivity : AppCompatActivity() {
             pauseIcon.visibility = View.GONE
             playIcon.visibility = View.VISIBLE
             pauseSpinningAnimation()
+            startPlayPulse()
             updateButtonStates()
             stopProgressBarUpdateSafe()
         } catch (e: Exception) {
@@ -650,6 +749,7 @@ class GameActivity : AppCompatActivity() {
 
         // Stop animation cleanly
         pauseSpinningAnimation()
+        stopAllPulseAnimations()
 
         // Reset game state
         transformAlbumCoverToBuzzer()
@@ -677,6 +777,7 @@ class GameActivity : AppCompatActivity() {
                     albumArtworkImageView.visibility = View.VISIBLE
                     // Hide skip button when song is revealed (no longer functional)
                     skipButton.visibility = View.GONE
+                    stopAllPulseAnimations()
                 }
                 isSongPaused -> {
                     controlButton.visibility = View.VISIBLE
@@ -906,8 +1007,12 @@ class GameActivity : AppCompatActivity() {
             if (::spinningAnimator.isInitialized) {
                 spinningAnimator.cancel()
             }
+            // Add pulse animation cleanup
+            stopAllPulseAnimations()
+            pausePulseAnimator = null
+            playPulseAnimator = null
         } catch (e: Exception) {
-            Log.e("GameActivity", "Error cancelling animation", e)
+            Log.e("GameActivity", "Error cancelling animations", e)
         }
 
         coroutineScope.cancel()
