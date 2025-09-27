@@ -49,6 +49,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var loadingStatusText: TextView
     private lateinit var settingsButton: ImageView
+    
+    // Enhanced callback state tracking
+    private var isHandlingCallback = false
+    private var hasHandledInitialCheck = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,12 +65,23 @@ class MainActivity : AppCompatActivity() {
         setupPlaylistHistoryRecyclerView()
 
         SpotifyManager.loadTokens(this)
-        checkAndRefreshToken()
+        
+        // Check if this is a callback intent first
+        val isCallback = handleIntentIfCallback(intent)
+        if (!isCallback) {
+            // Only do the initial check if this isn't a callback
+            hasHandledInitialCheck = true
+            checkAndRefreshToken()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        checkAndRefreshToken()
+        // Only check and refresh token if we're not currently handling a callback
+        // and we haven't already handled the initial check in onCreate
+        if (!isHandlingCallback && hasHandledInitialCheck) {
+            checkAndRefreshToken()
+        }
     }
 
     private fun initializeViews() {
@@ -109,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                     showLoginRequired()
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Failed to reconnect: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e("MainActivity", "Failed to reconnect: ${e.message}", e)
                 showLoginRequired()
             }
         }
@@ -121,7 +136,7 @@ class MainActivity : AppCompatActivity() {
             if (connected) {
                 showMainContent()
             } else {
-                Toast.makeText(this@MainActivity, "Failed to connect to Spotify", Toast.LENGTH_LONG).show()
+                Log.e("MainActivity", "Failed to connect to Spotify App Remote")
                 showLoginRequired()
             }
         }
@@ -157,33 +172,62 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleSpotifyCallback(intent)
+        setIntent(intent) // This is crucial - update the activity's intent
+        handleIntentIfCallback(intent)
+    }
+    
+    private fun handleIntentIfCallback(intent: Intent): Boolean {
+        val uri = intent.data
+        if (uri?.scheme == "com.example.musick") {
+            Log.d("MainActivity", "Handling OAuth callback: ${uri}")
+            isHandlingCallback = true
+            handleSpotifyCallback(intent)
+            return true
+        }
+        return false
     }
 
     private fun handleSpotifyCallback(intent: Intent) {
         val uri = intent.data
         if (uri?.scheme == "com.example.musick") {
             val code = uri.getQueryParameter("code")
+            val error = uri.getQueryParameter("error")
+            
+            Log.d("MainActivity", "OAuth callback - code: ${code != null}, error: $error")
+            
             if (code != null) {
                 handleSpotifyLogin(code)
             } else {
-                val error = uri.getQueryParameter("error")
-                Toast.makeText(this, "Authentication failed: $error", Toast.LENGTH_LONG).show()
+                val errorDescription = uri.getQueryParameter("error_description")
+                val errorMessage = error ?: "Unknown error"
+                Log.e("MainActivity", "Authentication failed: $errorMessage - $errorDescription")
+                Toast.makeText(this, "Authentication failed: $errorMessage", Toast.LENGTH_LONG).show()
+                isHandlingCallback = false
+                hasHandledInitialCheck = true
                 showLoginRequired()
             }
         }
     }
 
     private fun handleSpotifyLogin(code: String) {
+        Log.d("MainActivity", "Processing Spotify login with code")
+        showLoadingState()
+        loadingStatusText.text = "Authenticating with Spotify..."
+        
         coroutineScope.launch {
             try {
                 SpotifyManager.handleAuthorizationResponse(code, this@MainActivity)
+                Log.d("MainActivity", "Successfully got access token, connecting to Spotify")
+                loadingStatusText.text = "Connecting to Spotify..."
                 connectToSpotify()
-                showMainContent()
                 Toast.makeText(this@MainActivity, "Successfully logged in!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to get access token: ${e.message}", e)
                 Toast.makeText(this@MainActivity, "Failed to get access token: ${e.message}", Toast.LENGTH_LONG).show()
                 showLoginRequired()
+            } finally {
+                isHandlingCallback = false
+                hasHandledInitialCheck = true
             }
         }
     }
