@@ -17,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -30,7 +31,6 @@ import com.google.android.material.button.MaterialButton
 import com.spotify.protocol.types.Track
 import com.spotify.protocol.types.ImageUri
 import com.example.musick.SpotifyManager.spotifyAppRemote
-import com.google.android.material.imageview.ShapeableImageView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,13 +43,13 @@ class GameActivity : AppCompatActivity() {
     private lateinit var guessSongText: TextView
     private lateinit var songNameText: TextView
     private lateinit var artistNameText: TextView
-    private lateinit var albumArtworkImageView: ShapeableImageView
+    private lateinit var albumArtworkImageView: ImageView
     private lateinit var controlButton: MaterialButton
     private lateinit var skipButton: MaterialButton
     private lateinit var playerScoresRecyclerView: RecyclerView
-    private lateinit var buzzerButton: ShapeableImageView
-    private lateinit var playIcon: ShapeableImageView
-    private lateinit var pauseIcon: ShapeableImageView
+    private lateinit var buzzerButton: ImageView
+    private lateinit var playIcon: ImageView
+    private lateinit var pauseIcon: ImageView
 
     private var currentTrack: Track? = null
     private var currentPlayerIndex = 0
