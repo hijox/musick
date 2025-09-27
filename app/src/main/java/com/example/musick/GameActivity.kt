@@ -17,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -83,7 +84,7 @@ class GameActivity : AppCompatActivity() {
     private var playPulseAnimator: ValueAnimator? = null
     private var baseIconScale = 1.0f
     private val pulseScale = 1.15f // 15% larger at peak
-    private val pulseDuration = 1000L // 1 second per pulse
+    private val pulseDuration = 2000L // 2 seconds per pulse for smoother animation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,11 +152,11 @@ class GameActivity : AppCompatActivity() {
 
     private fun setupPulseAnimations() {
         try {
-            // Setup pause icon pulse animation
+            // Setup pause icon pulse animation with smoother interpolator
             pausePulseAnimator = ValueAnimator.ofFloat(baseIconScale, pulseScale, baseIconScale).apply {
                 duration = pulseDuration
                 repeatCount = ValueAnimator.INFINITE
-                interpolator = androidx.interpolator.view.animation.FastOutSlowInInterpolator()
+                interpolator = DecelerateInterpolator() // Smoother, more natural animation
                 addUpdateListener { animator ->
                     try {
                         if (!isFinishing && !isDestroyed) {
@@ -173,7 +174,7 @@ class GameActivity : AppCompatActivity() {
             playPulseAnimator = ValueAnimator.ofFloat(baseIconScale, pulseScale, baseIconScale).apply {
                 duration = pulseDuration
                 repeatCount = ValueAnimator.INFINITE
-                interpolator = androidx.interpolator.view.animation.FastOutSlowInInterpolator()
+                interpolator = DecelerateInterpolator() // Smoother, more natural animation
                 addUpdateListener { animator ->
                     try {
                         if (!isFinishing && !isDestroyed) {
@@ -198,28 +199,12 @@ class GameActivity : AppCompatActivity() {
             playIcon.scaleX = baseIconScale
             playIcon.scaleY = baseIconScale
 
-            // Start pause pulse
-            if (pausePulseAnimator?.isRunning != true) {
+            // Start pause pulse only if song is not paused
+            if (!isSongPaused && pausePulseAnimator?.isRunning != true) {
                 pausePulseAnimator?.start()
             }
         } catch (e: Exception) {
             Log.e("GameActivity", "Error starting pause pulse", e)
-        }
-    }
-
-    private fun startPlayPulse() {
-        try {
-            // Stop pause pulse if running
-            pausePulseAnimator?.cancel()
-            pauseIcon.scaleX = baseIconScale
-            pauseIcon.scaleY = baseIconScale
-
-            // Start play pulse
-            if (playPulseAnimator?.isRunning != true) {
-                playPulseAnimator?.start()
-            }
-        } catch (e: Exception) {
-            Log.e("GameActivity", "Error starting play pulse", e)
         }
     }
 
@@ -329,7 +314,7 @@ class GameActivity : AppCompatActivity() {
             pauseIcon.visibility = View.VISIBLE
             playIcon.visibility = View.GONE
             startSpinningAnimation()
-            startPausePulse()
+            startPausePulse() // Start pulsing only when song is playing
             updateButtonStates()
             startProgressBarUpdateSafe()
 
@@ -347,7 +332,7 @@ class GameActivity : AppCompatActivity() {
             pauseIcon.visibility = View.GONE
             playIcon.visibility = View.VISIBLE
             pauseSpinningAnimation()
-            startPlayPulse()
+            stopAllPulseAnimations() // Stop all animations when paused
             updateButtonStates()
             stopProgressBarUpdateSafe()
         } catch (e: Exception) {
@@ -786,6 +771,7 @@ class GameActivity : AppCompatActivity() {
                     // Hide skip button when song is paused (not functional)
                     skipButton.visibility = View.GONE
                     pauseSpinningAnimation()
+                    // Don't start any pulse animations when paused
                 }
                 else -> {
                     // Song is playing - show skip button
@@ -793,6 +779,7 @@ class GameActivity : AppCompatActivity() {
                     albumArtworkImageView.visibility = View.GONE
                     skipButton.visibility = View.VISIBLE
                     startSpinningAnimation()
+                    // Pulse animations are started in startSong()
                 }
             }
         } catch (e: Exception) {
