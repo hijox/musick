@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- Player Name -->
+    <TextView
+        android:id="@+id/playerNameText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Player Name"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/hostIndicator" />
+
+    <!-- Host Indicator -->
+    <TextView
+        android:id="@+id/hostIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="HOST"
+        android:textColor="@color/spotify_green"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:background="@drawable/chip_background"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:visibility="gone"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/minusOneButton" />
+
+    <!-- Score Controls -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/minusOneButton"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="8dp"
+        android:text="-"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:backgroundTint="@color/surface_variant"
+        app:cornerRadius="8dp"
+        app:strokeColor="@color/spotify_green"
+        app:strokeWidth="1dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/scoreText" />
+
+    <TextView
+        android:id="@+id/scoreText"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/plusOneButton" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/plusOneButton"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:text="+"
+        android:textColor="@color/text_on_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        app:backgroundTint="@color/spotify_green"
+        app:cornerRadius="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
