@@ -19,7 +19,7 @@
             android:id="@+id/mainContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="16dp"
+            android:padding="12dp"
             android:minHeight="200dp">
 
             <!-- Content Container -->
@@ -31,70 +31,92 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
-                <!-- Current Player Card -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/currentPlayerCard"
+                <!-- Player Name and Skip Button Row -->
+                <LinearLayout
+                    android:id="@+id/currentPlayerRow"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:orientation="horizontal"
                     android:layout_marginBottom="24dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="8dp"
-                    app:cardBackgroundColor="@color/spotify_green"
+                    android:gravity="center_vertical"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
+                    <!-- Current Player Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/currentPlayerCard"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:padding="16dp">
+                        android:layout_weight="1"
+                        android:layout_marginEnd="12dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="8dp"
+                        app:cardBackgroundColor="@color/spotify_green">
 
-                        <TextView
-                            android:id="@+id/currentPlayerText"
-                            android:layout_width="0dp"
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Player 1"
-                            android:textColor="@color/text_on_primary"
-                            android:textSize="20sp"
-                            android:textStyle="bold"
-                            android:layout_marginEnd="16dp"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/skipButton"
-                            tools:text="Player 1" />
+                            android:padding="8dp">
+
+                            <TextView
+                                android:id="@+id/currentPlayerText"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:text="Player 1"
+                                android:textColor="@color/text_on_primary"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:gravity="center_vertical"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                tools:text="Player 1" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Skip Button Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/skipButtonCard"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="28dp"
+                        app:cardElevation="8dp"
+                        app:cardBackgroundColor="@android:color/transparent">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/skipButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Skip"
-                            android:textColor="@color/text_on_primary"
-                            app:backgroundTint="@android:color/transparent"
-                            app:strokeColor="@color/text_on_primary"
-                            app:strokeWidth="1dp"
-                            app:cornerRadius="12dp"
-                            app:icon="@drawable/ic_arrow_back"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:insetLeft="0dp"
+                            android:insetTop="0dp"
+                            android:insetRight="0dp"
+                            android:insetBottom="0dp"
+                            app:backgroundTint="@color/spotify_green"
+                            app:cornerRadius="28dp"
+                            app:icon="@drawable/ic_arrow_skip"
                             app:iconGravity="textStart"
-                            app:iconTint="@color/text_on_primary"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent" />
+                            app:iconPadding="0dp"
+                            app:iconSize="28dp"
+                            app:iconTint="@color/text_on_primary" />
 
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
                 <!-- Song Information Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/songInfoCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="18dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="4dp"
                     app:cardBackgroundColor="@color/surface"
-                    app:layout_constraintTop_toBottomOf="@id/currentPlayerCard"
+                    app:layout_constraintTop_toBottomOf="@id/currentPlayerRow"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
@@ -102,7 +124,7 @@
                         android:id="@+id/songInfoLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:padding="24dp"
+                        android:padding="12dp"
                         android:minHeight="80dp">
 
                         <TextView
@@ -111,11 +133,11 @@
                             android:layout_height="wrap_content"
                             android:text="Guess the song!"
                             android:textColor="@color/text_primary"
-                            android:textSize="24sp"
+                            android:textSize="22sp"
                             android:textStyle="bold"
                             android:gravity="center"
                             android:visibility="visible"
-                            android:minHeight="60dp"
+                            android:minHeight="42dp"
                             android:layout_marginVertical="16dp"
                             app:layout_constraintTop_toTopOf="parent"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -127,11 +149,12 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:textColor="@color/text_primary"
-                            android:textSize="24sp"
+                            android:textSize="22sp"
                             android:textStyle="bold"
                             android:gravity="center"
                             android:maxLines="2"
                             android:ellipsize="end"
+                            android:minHeight="40dp"
                             app:autoSizeTextType="uniform"
                             app:autoSizeMinTextSize="16sp"
                             app:autoSizeMaxTextSize="24sp"
@@ -172,7 +195,8 @@
                     android:id="@+id/albumCoverContainer"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="18dp"
+                    app:cardCornerRadius="16dp"
                     app:layout_constraintTop_toBottomOf="@id/songInfoCard"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
@@ -186,7 +210,6 @@
                         android:contentDescription="@string/buzzer"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?attr/selectableItemBackgroundBorderless"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -200,7 +223,7 @@
                         android:visibility="gone"
                         android:src="@drawable/play"
                         android:contentDescription="Play Icon"
-                        app:tint="@color/text_primary"
+                        app:tint="@color/spotify_green"
                         android:clickable="false"
                         android:focusable="false"
                         app:layout_constraintTop_toTopOf="parent"
@@ -215,7 +238,7 @@
                         android:visibility="visible"
                         android:src="@drawable/pause"
                         android:contentDescription="Pause Icon"
-                        app:tint="@color/text_primary"
+                        app:tint="@color/spotify_green"
                         android:clickable="false"
                         android:focusable="false"
                         app:layout_constraintTop_toTopOf="parent"
@@ -246,14 +269,13 @@
                     android:id="@+id/controlButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="18dp"
                     android:text="Reveal"
                     android:textColor="@color/text_on_primary"
                     android:textSize="16sp"
                     android:visibility="invisible"
                     app:backgroundTint="@color/spotify_green"
                     app:cornerRadius="12dp"
-                    app:icon="@drawable/ic_settings"
                     app:layout_constraintTop_toBottomOf="@id/albumCoverContainer"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
@@ -264,7 +286,7 @@
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="8dp"
                     android:max="1000"
                     android:progress="0"
                     android:progressTint="@color/spotify_green"
@@ -278,7 +300,7 @@
                     android:id="@+id/scoreText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="8dp"
                     android:text="Scores"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
@@ -291,7 +313,7 @@
                     android:id="@+id/playerScoresRecyclerView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="8dp"
                     android:layout_marginBottom="32dp"
                     android:nestedScrollingEnabled="false"
                     app:layout_constraintTop_toBottomOf="@id/scoreText"

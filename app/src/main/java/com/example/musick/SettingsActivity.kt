@@ -4,14 +4,14 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var randomStartSwitch: SwitchMaterial
-    private lateinit var backButton: ImageView
+    private lateinit var backButton: FloatingActionButton
     private lateinit var preferences: SharedPreferences
 
     companion object {
@@ -38,17 +38,20 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         randomStartSwitch = findViewById(R.id.randomStartSwitch)
-        backButton = findViewById(R.id.backButton)
+        backButton = findViewById(R.id.backButton)  // This should work correctly now
         preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     private fun loadSettings() {
         // Load saved settings
-        randomStartSwitch.isChecked = preferences.getBoolean(PREF_RANDOM_START, false)
+        val isRandomStartEnabled = preferences.getBoolean(PREF_RANDOM_START, false)
+        Log.d("SettingsActivity", "Loading random start setting: $isRandomStartEnabled")
+        randomStartSwitch.isChecked = isRandomStartEnabled
     }
 
     private fun setupListeners() {
         backButton.setOnClickListener {
+            Log.d("SettingsActivity", "Back button pressed")
             finish()
         }
 
@@ -58,6 +61,9 @@ class SettingsActivity : AppCompatActivity() {
             preferences.edit()
                 .putBoolean(PREF_RANDOM_START, isChecked)
                 .apply()
+
+            // Log to verify the setting was saved
+            Log.d("SettingsActivity", "Setting saved. Verification: ${preferences.getBoolean(PREF_RANDOM_START, false)}")
         }
     }
 }

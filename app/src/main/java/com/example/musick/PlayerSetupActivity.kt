@@ -113,7 +113,7 @@ class PlayerSetupActivity : AppCompatActivity() {
             setHintTextColor(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.text_secondary)))
             isHintAnimationEnabled = true
             isHintEnabled = true
-            boxCornerRadius = 12f
+            setBoxCornerRadii(12f, 12f, 12f, 12f)
         }
     }
 
