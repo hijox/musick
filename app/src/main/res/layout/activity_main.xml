@@ -168,16 +168,81 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
+                <!-- Game Mode Selection -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/gameModeCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:layout_constraintTop_toBottomOf="@id/titleTextView"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Choose Game Mode"
+                            android:textColor="@color/text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginBottom="16dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/singlePlayerButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:layout_marginBottom="8dp"
+                            android:text="Single Device Game"
+                            android:textColor="@color/text_on_primary"
+                            android:textSize="16sp"
+                            app:backgroundTint="@color/spotify_green"
+                            app:cornerRadius="12dp"
+                            app:icon="@drawable/play"
+                            app:iconGravity="textStart"
+                            app:iconPadding="12dp"
+                            app:iconSize="24dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/multiplayerButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:text="Local Multiplayer"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            app:backgroundTint="@color/surface_variant"
+                            app:cornerRadius="12dp"
+                            app:strokeColor="@color/spotify_green"
+                            app:strokeWidth="2dp"
+                            app:icon="@drawable/ic_group"
+                            app:iconGravity="textStart"
+                            app:iconPadding="12dp"
+                            app:iconSize="24dp"
+                            app:iconTint="@color/spotify_green" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
                 <!-- Playlist Input Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/inputCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginTop="16dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="4dp"
                     app:cardBackgroundColor="@color/surface"
-                    app:layout_constraintTop_toBottomOf="@id/titleTextView"
+                    app:layout_constraintTop_toBottomOf="@id/gameModeCard"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
