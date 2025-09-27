@@ -48,5 +48,4 @@
     
     <!-- Screen margins -->
     <dimen name="screen_margin">16dp</dimen>
-    <dimen name="content_max_width">600dp</dimen>
 </resources>
