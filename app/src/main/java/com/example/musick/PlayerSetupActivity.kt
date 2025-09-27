@@ -26,6 +26,7 @@ class PlayerSetupActivity : AppCompatActivity() {
     private lateinit var playerNamesLayout: LinearLayout
     private lateinit var playerNamesCard: MaterialCardView
     private lateinit var startGameButton: MaterialButton
+    private lateinit var localMultiplayerButton: MaterialButton
     private lateinit var sharedPreferences: SharedPreferences
     private var playerNames: MutableList<String> = mutableListOf()
     private var isLoadingOldConfig = false
@@ -38,12 +39,14 @@ class PlayerSetupActivity : AppCompatActivity() {
         playerNamesLayout = findViewById(R.id.playerNamesLayout)
         playerNamesCard = findViewById(R.id.playerNamesCard)
         startGameButton = findViewById(R.id.startGameButton)
+        localMultiplayerButton = findViewById(R.id.localMultiplayerButton)
 
         sharedPreferences = getSharedPreferences("PlayerSetup", Context.MODE_PRIVATE)
 
         setupPlayerCountInput()
         loadLastConfiguration()
         setupStartGameButton()
+        setupLocalMultiplayerButton()
         setupBackButton()
     }
 
@@ -168,6 +171,15 @@ class PlayerSetupActivity : AppCompatActivity() {
                 saveConfiguration()
                 startGame()
             }
+        }
+    }
+
+    private fun setupLocalMultiplayerButton() {
+        localMultiplayerButton.setOnClickListener {
+            val playlistId = intent.getStringExtra("PLAYLIST_ID")
+            val intent = Intent(this, MultiplayerSetupActivity::class.java)
+            intent.putExtra("PLAYLIST_ID", playlistId)
+            startActivity(intent)
         }
     }
 
