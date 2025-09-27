@@ -675,19 +675,22 @@ class GameActivity : AppCompatActivity() {
                 isSongRevealed -> {
                     controlButton.visibility = View.INVISIBLE
                     albumArtworkImageView.visibility = View.VISIBLE
-                    skipButton.isEnabled = false
+                    // Hide skip button when song is revealed (no longer functional)
+                    skipButton.visibility = View.GONE
                 }
                 isSongPaused -> {
                     controlButton.visibility = View.VISIBLE
                     controlButton.text = "Reveal"
                     albumArtworkImageView.visibility = View.GONE
-                    skipButton.isEnabled = false
+                    // Hide skip button when song is paused (not functional)
+                    skipButton.visibility = View.GONE
                     pauseSpinningAnimation()
                 }
                 else -> {
+                    // Song is playing - show skip button
                     controlButton.visibility = View.INVISIBLE
                     albumArtworkImageView.visibility = View.GONE
-                    skipButton.isEnabled = true
+                    skipButton.visibility = View.VISIBLE
                     startSpinningAnimation()
                 }
             }
