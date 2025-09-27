@@ -83,8 +83,8 @@ class GameActivity : AppCompatActivity() {
     private var pausePulseAnimator: ValueAnimator? = null
     private var playPulseAnimator: ValueAnimator? = null
     private var baseIconScale = 1.0f
-    private val pulseScale = 1.15f // 15% larger at peak
-    private val pulseDuration = 2000L // 2 seconds per pulse for smoother animation
+    private val pulseScale = 1.20f // 15% larger at peak
+    private val pulseDuration = 1500L // 2 seconds per pulse for smoother animation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
