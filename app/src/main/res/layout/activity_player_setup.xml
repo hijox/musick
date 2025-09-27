@@ -169,12 +169,34 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Local Multiplayer Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/localMultiplayerButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="24dp"
+                    android:text="Local Multiplayer"
+                    android:textColor="@color/spotify_green"
+                    android:textSize="16sp"
+                    app:strokeColor="@color/spotify_green"
+                    app:strokeWidth="2dp"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_people"
+                    app:iconGravity="textStart"
+                    app:iconPadding="12dp"
+                    app:iconSize="24dp"
+                    app:iconTint="@color/spotify_green"
+                    app:layout_constraintTop_toBottomOf="@id/playerNamesCard"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
                 <!-- Start Game Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/startGameButton"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="12dp"
                     android:layout_marginBottom="32dp"
                     android:text="Start Game"
                     android:textColor="@color/text_on_primary"
@@ -186,7 +208,7 @@
                     app:iconGravity="textStart"
                     app:iconPadding="12dp"
                     app:iconSize="38dp"
-                    app:layout_constraintTop_toBottomOf="@id/playerNamesCard"
+                    app:layout_constraintTop_toBottomOf="@id/localMultiplayerButton"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent" />
