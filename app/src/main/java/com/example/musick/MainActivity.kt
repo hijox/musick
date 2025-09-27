@@ -33,6 +33,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var playlistLinkInput: EditText
     private lateinit var startGameButton: Button
+    private lateinit var singlePlayerButton: MaterialButton
+    private lateinit var multiplayerButton: MaterialButton
     private lateinit var playlistHistoryRecyclerView: RecyclerView
     private lateinit var playlistHistoryAdapter: PlaylistHistoryAdapter
 
@@ -53,6 +55,13 @@ class MainActivity : AppCompatActivity() {
     // Enhanced callback state tracking
     private var isHandlingCallback = false
     private var hasHandledInitialCheck = false
+    
+    // Game mode selection state
+    private var selectedGameMode: GameMode = GameMode.SINGLE_PLAYER
+    
+    enum class GameMode {
+        SINGLE_PLAYER, MULTIPLAYER
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         setupLoginScreen()
         loadPlaylistHistory()
         setupPlaylistHistoryRecyclerView()
+        updateGameModeButtons()
 
         SpotifyManager.loadTokens(this)
         
@@ -87,6 +97,8 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         playlistLinkInput = findViewById(R.id.playlistLinkInput)
         startGameButton = findViewById(R.id.startGameButton)
+        singlePlayerButton = findViewById(R.id.singlePlayerButton)
+        multiplayerButton = findViewById(R.id.multiplayerButton)
         playlistHistoryRecyclerView = findViewById(R.id.playlistHistoryRecyclerView)
         loginContainer = findViewById(R.id.loginContainer)
         loginButton = findViewById(R.id.loginButton)
@@ -105,6 +117,45 @@ class MainActivity : AppCompatActivity() {
         settingsButton.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
+        }
+        
+        singlePlayerButton.setOnClickListener {
+            selectedGameMode = GameMode.SINGLE_PLAYER
+            updateGameModeButtons()
+        }
+        
+        multiplayerButton.setOnClickListener {
+            selectedGameMode = GameMode.MULTIPLAYER
+            updateGameModeButtons()
+        }
+    }
+    
+    private fun updateGameModeButtons() {
+        when (selectedGameMode) {
+            GameMode.SINGLE_PLAYER -> {
+                singlePlayerButton.apply {
+                    setBackgroundColor(getColor(R.color.spotify_green))
+                    setTextColor(getColor(R.color.text_on_primary))
+                    iconTint = getColorStateList(R.color.text_on_primary)
+                }
+                multiplayerButton.apply {
+                    setBackgroundColor(getColor(R.color.surface_variant))
+                    setTextColor(getColor(R.color.text_primary))
+                    iconTint = getColorStateList(R.color.spotify_green)
+                }
+            }
+            GameMode.MULTIPLAYER -> {
+                singlePlayerButton.apply {
+                    setBackgroundColor(getColor(R.color.surface_variant))
+                    setTextColor(getColor(R.color.text_primary))
+                    iconTint = getColorStateList(R.color.spotify_green)
+                }
+                multiplayerButton.apply {
+                    setBackgroundColor(getColor(R.color.spotify_green))
+                    setTextColor(getColor(R.color.text_on_primary))
+                    iconTint = getColorStateList(R.color.text_on_primary)
+                }
+            }
         }
     }
 
@@ -283,7 +334,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchGameActivity(playlistId: String) {
-        val intent = Intent(this@MainActivity, PlayerSetupActivity::class.java)
+        val intent = when (selectedGameMode) {
+            GameMode.SINGLE_PLAYER -> {
+                Intent(this@MainActivity, PlayerSetupActivity::class.java)
+            }
+            GameMode.MULTIPLAYER -> {
+                Intent(this@MainActivity, MultiplayerSetupActivity::class.java)
+            }
+        }
         intent.putExtra("PLAYLIST_ID", playlistId)
         startActivity(intent)
     }
