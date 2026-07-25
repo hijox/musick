@@ -30,12 +30,21 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
+<<<<<<< HEAD
                 <!-- Status Text -->
+=======
+                <!-- Status Text at Top -->
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                 <TextView
                     android:id="@+id/statusText"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+<<<<<<< HEAD
                     android:text="Connected to game"
+=======
+                    android:layout_marginBottom="16dp"
+                    android:text="Multiplayer Game"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -44,16 +53,122 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
+<<<<<<< HEAD
+=======
+                <!-- Skip Button Row (Host Only) -->
+                <LinearLayout
+                    android:id="@+id/controlButtonRow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center"
+                    app:layout_constraintTop_toBottomOf="@id/statusText"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <!-- Control Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/controlButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Start Round"
+                        android:textColor="@color/text_on_primary"
+                        android:textSize="16sp"
+                        android:visibility="gone"
+                        app:backgroundTint="@color/spotify_green"
+                        app:cornerRadius="12dp" />
+
+                    <!-- Skip Button -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/skipButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Skip Song"
+                        android:textColor="@color/text_on_primary"
+                        android:textSize="16sp"
+                        android:visibility="gone"
+                        app:backgroundTint="@color/surface_variant"
+                        app:cornerRadius="12dp" />
+
+                </LinearLayout>
+
+                <!-- Buzzer Status Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/buzzerStatusCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/spotify_green"
+                    app:layout_constraintTop_toBottomOf="@id/controlButtonRow"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <TextView
+                        android:id="@+id/buzzerStatusText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="Round active - buzz to answer!"
+                        android:textColor="@color/text_on_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Winner Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/winnerCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:strokeColor="@color/spotify_green"
+                    app:strokeWidth="2dp"
+                    app:layout_constraintTop_toBottomOf="@id/buzzerStatusCard"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent">
+
+                    <TextView
+                        android:id="@+id/winnerText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="16dp"
+                        android:text="Player buzzed first!"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                 <!-- Song Information Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/songInfoCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+<<<<<<< HEAD
                     android:layout_marginTop="18dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="4dp"
                     app:cardBackgroundColor="@color/surface"
                     app:layout_constraintTop_toBottomOf="@id/statusText"
+=======
+                    android:layout_marginTop="12dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/surface"
+                    app:layout_constraintTop_toBottomOf="@id/winnerCard"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
@@ -68,7 +183,11 @@
                             android:id="@+id/guessSongText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+<<<<<<< HEAD
                             android:text="Guess the song!"
+=======
+                            android:text="Listen and buzz to answer!"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                             android:textColor="@color/text_primary"
                             android:textSize="22sp"
                             android:textStyle="bold"
@@ -81,6 +200,7 @@
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintEnd_toEndOf="parent" />
 
+<<<<<<< HEAD
                         <!-- Playlist progress indicator (shown during spinning state only) -->
                         <TextView
                             android:id="@+id/playlistProgressText"
@@ -94,6 +214,8 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             tools:text="10 / 80" />
 
+=======
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                         <TextView
                             android:id="@+id/songNameText"
                             android:layout_width="0dp"
@@ -140,7 +262,11 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+<<<<<<< HEAD
                 <!-- Album Cover / Vinyl Container -->
+=======
+                <!-- Album Cover / Buzzer Container -->
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/albumCoverContainer"
                     android:layout_width="200dp"
@@ -150,21 +276,36 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent">
 
+<<<<<<< HEAD
                     <!-- Vinyl Record Button (buzzer) -->
+=======
+                    <!-- Buzzer Button -->
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     <ImageView
                         android:id="@+id/buzzerButton"
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:src="@drawable/vinyl_record"
+<<<<<<< HEAD
                         android:contentDescription="@string/buzzer"
                         android:clickable="true"
                         android:focusable="true"
+=======
+                        android:contentDescription="Buzzer - tap to answer"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
+<<<<<<< HEAD
                     <!-- Play Icon -->
+=======
+                    <!-- Play/Pause Icons -->
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     <ImageView
                         android:id="@+id/playIcon"
                         android:layout_width="48dp"
@@ -180,7 +321,10 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent" />
 
+<<<<<<< HEAD
                     <!-- Pause Icon -->
+=======
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     <ImageView
                         android:id="@+id/pauseIcon"
                         android:layout_width="48dp"
@@ -206,6 +350,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:background="?attr/selectableItemBackgroundBorderless"
+<<<<<<< HEAD
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -259,17 +404,33 @@
 
                 </com.google.android.material.card.MaterialCardView>
 
+=======
+                        app:cardCornerRadius="16dp"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        tools:src="@tools:sample/avatars" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                 <!-- Song Progress Bar -->
                 <ProgressBar
                     android:id="@+id/songProgressBar"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+<<<<<<< HEAD
                     android:layout_marginTop="8dp"
+=======
+                    android:layout_marginTop="16dp"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     android:max="1000"
                     android:progress="0"
                     android:progressTint="@color/spotify_green"
                     android:progressBackgroundTint="@color/surface_variant"
+<<<<<<< HEAD
                     app:layout_constraintTop_toBottomOf="@id/controlButton"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
@@ -336,6 +497,23 @@
                     android:textSize="20sp"
                     android:textStyle="bold"
                     app:layout_constraintTop_toBottomOf="@id/winnerCard"
+=======
+                    app:layout_constraintTop_toBottomOf="@id/albumCoverContainer"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Players Section -->
+                <TextView
+                    android:id="@+id/scoreText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Players"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    app:layout_constraintTop_toBottomOf="@id/songProgressBar"
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
@@ -345,10 +523,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="16dp"
+<<<<<<< HEAD
                     app:layout_constraintTop_toBottomOf="@id/scoreTextSection"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent" />
+=======
+                    android:nestedScrollingEnabled="false"
+                    app:layout_constraintTop_toBottomOf="@id/scoreText"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    tools:listitem="@layout/item_multiplayer_score_host" />
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -403,4 +590,8 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+<<<<<<< HEAD
 </androidx.constraintlayout.widget.ConstraintLayout>
+=======
+</androidx.constraintlayout.widget.ConstraintLayout>
+>>>>>>> ca30bd2a04339303cbf866c426f0310a0fa81a7a
