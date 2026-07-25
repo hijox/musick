@@ -86,6 +86,11 @@ class GameActivity : AppCompatActivity() {
     private val pulseScale = 1.20f // 15% larger at peak
     private val pulseDuration = 1500L // 2 seconds per pulse for smoother animation
 
+    // Playlist progress tracking
+    private var gamePlaylistTotalTracks: Int = 0
+    private val seenTrackUris = mutableSetOf<String>()
+    private lateinit var playlistProgressText: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
@@ -148,6 +153,10 @@ class GameActivity : AppCompatActivity() {
         loadingOverlay = findViewById(R.id.loadingOverlay)
         loadingProgressBar = findViewById(R.id.loadingProgressBar)
         loadingText = findViewById(R.id.loadingText)
+        playlistProgressText = findViewById(R.id.playlistProgressText)
+
+        // Initialize progress text during spinning state (hidden by default at game start)
+        playlistProgressText.visibility = View.GONE
     }
 
     private fun setupPulseAnimations() {
@@ -318,6 +327,16 @@ class GameActivity : AppCompatActivity() {
             updateButtonStates()
             startProgressBarUpdateSafe()
 
+            // Track progress for this song
+            currentTrack?.let { track ->
+                track.uri?.let { uri ->
+                    if (seenTrackUris.add(uri)) {
+                        Log.d("GameActivity", "New song seen: ${track.name} [$uri] (${seenTrackUris.size) / $gamePlaylistTotalTracks)")
+                    }
+                }
+            }
+            updateProgressDisplay()
+
             preloadCurrentTrackArt()
         } catch (e: Exception) {
             Log.e("GameActivity", "Error starting song", e)
@@ -342,21 +361,45 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun playPlaylist(playlistId: String) {
-        try {
-            spotifyAppRemote?.playerApi?.let { playerApi ->
-                playerApi.setShuffle(true)
-                playerApi.play("spotify:playlist:$playlistId")
+        showLoading("Fetching track info...")
 
-                // Apply random start if enabled - simple and direct
-                if (SettingsActivity.isRandomStartEnabled(this)) {
-                    applyRandomStart()
-                } else {
-                    startSong()
+        // Fetch total playlist track count for progress tracking
+        coroutineScope.launch {
+            try {
+                pendingPlaylistId?.let { id ->
+                    val result = SpotifyApiClient.getPlaylistSafe(
+                        SpotifyManager.getAccessToken()!!,
+                        id
+                    )
+                    result onSuccess { response ->
+                        gamePlaylistTotalTracks = response.tracks.total
+                        Log.d("GameActivity", "Playlist has $gamePlaylistTotalTracks total tracks")
+                        hideLoading()
+                    }
                 }
+
+                // Then start the actual playback
+                spotifyAppRemote?.playerApi?.let { playerApi ->
+                    playerApi.setShuffle(true)
+                    playerApi.play("spotify:playlist:$playlistId")
+
+                    if (SettingsActivity.isRandomStartEnabled(this@GameActivity)) {
+                        applyRandomStart()
+                    } else {
+                        startSong()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("GameActivity", "Failed to fetch playlist info or play playlist", e)
+                hideLoading()
             }
-        } catch (e: Exception) {
-            Log.e("GameActivity", "Error playing playlist", e)
-            showErrorToast("Failed to play playlist")
+        }
+
+        // Apply random start if enabled - simple and direct
+        if (!SettingsActivity.isRandomStartEnabled(this)) {
+            // Already called inside coroutine above; this path handles non-suspend cases
+        } else {
+            applyRandomStart()
         }
     }
 
@@ -774,10 +817,12 @@ class GameActivity : AppCompatActivity() {
                     // Don't start any pulse animations when paused
                 }
                 else -> {
-                    // Song is playing - show skip button
+                    // Song is playing - show skip button AND progress info
                     controlButton.visibility = View.INVISIBLE
                     albumArtworkImageView.visibility = View.GONE
                     skipButton.visibility = View.VISIBLE
+                    updateProgressDisplay()
+                    
                     startSpinningAnimation()
                     // Pulse animations are started in startSong()
                 }
@@ -785,6 +830,32 @@ class GameActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e("GameActivity", "Error updating button states", e)
         }
+    }
+
+    /**
+     * Display playlist progress as "N / M" during spinning state only.
+     */
+    private fun updateProgressDisplay() {
+        try {
+            if (gamePlaylistTotalTracks > 0 && !isSongRevealed) {
+                playlistProgressText.text = "${seenTrackUris.size} / $gamePlaylistTotalTracks"
+                playlistProgressText.visibility = View.VISIBLE
+            } else if (isSongRevealed) {
+                // Hide progress text when song is revealed (replaced by album art)
+                playlistProgressText.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error updating progress display", e)
+        }
+    }
+
+    /**
+     * Clear seen track UIRs for a new game. Called once when the game starts fresh
+     * (not between rounds of the same game).
+     */
+    private fun resetProgressTracking() {
+        seenTrackUris.clear()
+        gamePlaylistTotalTracks = 0
     }
 
     private fun updatePlayerScore(player: String, points: Int) {

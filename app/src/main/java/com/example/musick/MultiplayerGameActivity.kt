@@ -95,6 +95,11 @@ class MultiplayerGameActivity : AppCompatActivity() {
     private var isProgressBarUpdating = false
     private var albumArtCache = mutableMapOf<ImageUri, Bitmap>()
 
+    // Playlist progress tracking (host)
+    private lateinit var playlistProgressText: TextView
+    private var gamePlaylistTotalTracks: Int = 0
+    private val seenTrackUris = mutableSetOf<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_multiplayer_game)
@@ -153,6 +158,7 @@ class MultiplayerGameActivity : AppCompatActivity() {
         buzzerStatusText = findViewById(R.id.buzzerStatusText)
         winnerCard = findViewById(R.id.winnerCard)
         winnerText = findViewById(R.id.winnerText)
+        playlistProgressText = findViewById(R.id.playlistProgressText)
 
         // Initial visibility
         songNameText.visibility = View.GONE
@@ -160,6 +166,7 @@ class MultiplayerGameActivity : AppCompatActivity() {
         albumArtworkImageView.visibility = View.GONE
         buzzerStatusCard.visibility = View.GONE
         winnerCard.visibility = View.GONE
+        playlistProgressText.visibility = View.GONE
 
         // Set initial status
         statusText.text = if (isHost) "You are hosting the game" else "Connected to game"
@@ -220,6 +227,7 @@ class MultiplayerGameActivity : AppCompatActivity() {
                 updatePlayerScore(playerId, delta)
             } else null,
             isHost = isHost
+
         )
         
         playersRecyclerView.apply {
@@ -261,16 +269,30 @@ class MultiplayerGameActivity : AppCompatActivity() {
     private fun playPlaylist(playlistId: String) {
         if (!isHost) return
 
-        try {
-            spotifyAppRemote?.playerApi?.let { playerApi ->
-                playerApi.setShuffle(true)
-                playerApi.play("spotify:playlist:$playlistId")
-                
-                // Wait a moment then start first round
-                mainHandler.postDelayed({
-                    startNewRound()
-                }, 2000)
+        // Fetch total track count for progress tracking (fire-and-forget)
+        coroutineScope.launch {
+            try {
+                val result = SpotifyApiClient.getPlaylistSafe(
+                    SpotifyManager.getAccessToken()!!,
+                    playlistId
+                )
+                result onSuccess { response ->
+                    gamePlaylistTotalTracks = response.tracks.total
+                    Log.d(TAG, "Playlist has $gamePlaylistTotalTracks total tracks")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to fetch playlist track count", e)
             }
+        }
+
+        // Start playback and schedule round start via single path
+        try {
+            spotifyAppRemote?.playerApi?.setShuffle(true)
+            spotifyAppRemote?.playerApi?.play("spotify:playlist:$playlistId")
+
+            mainHandler.postDelayed({
+                startNewRound()
+            }, 2000)
         } catch (e: Exception) {
             Log.e(TAG, "Error playing playlist", e)
             showErrorToast("Failed to play playlist")
@@ -428,9 +450,33 @@ class MultiplayerGameActivity : AppCompatActivity() {
         buzzerStatusCard.visibility = View.GONE
         winnerCard.visibility = View.VISIBLE
         winnerText.text = "Time's up! No one buzzed."
-        
-        // Reveal the song anyway
+
+        // Notify all clients to show the same timeout state before revealing song
+        val timeoutMessage = MultiplayerMessage.RoundTimeout(
+            timestamp = System.currentTimeMillis(),
+            senderId = currentPlayer?.id ?: ""
+        )
+        wifiDirectManager.sendMessage(timeoutMessage)
+
+        // Reveal the song (broadcasts SongRevealed to clients too)
         revealSong()
+    }
+
+    private fun handleRoundTimeout(message: MultiplayerMessage) {
+        if (currentPlayer == null) return
+
+        roundActive = false
+        buzzerStatusCard.visibility = View.GONE
+        winnerCard.visibility = View.VISIBLE
+        winnerText.text = "Time's up! No one buzzed!"
+        isSongRevealed = true
+
+        // Update progress visibility to match host state
+        playlistProgressText.visibility = View.GONE
+
+        updateUI()
+
+        // revealSong only works for host, so clients receive it via SongRevealed broadcast
     }
 
     private fun resetForNewRound() {
@@ -524,14 +570,25 @@ class MultiplayerGameActivity : AppCompatActivity() {
                     allPlayers.clear()
                     allPlayers.addAll(message.gameState.players)
                     playersAdapter.notifyDataSetChanged()
+
+                    // Also update display for clients: broadcast total tracks and progress
+                    if (isHost && message.gameState.totalTracks > 0) {
+                        gamePlaylistTotalTracks = message.gameState.totalTracks
+                        seenTrackUris.clear()
+                        seenTrackUris.addAll(message.gameState.seenTrackUris)
+                    }
                 }
-                
+
                 is MultiplayerMessage.NextSong -> {
                     if (!isHost) {
                         resetForNewRound()
                     }
                 }
                 
+                is MultiplayerMessage.RoundTimeout -> {
+                    handleRoundTimeout(message)
+                }
+
                 else -> {
                     Log.d(TAG, "Unhandled message: ${message.javaClass.simpleName}")
                 }
@@ -555,7 +612,10 @@ class MultiplayerGameActivity : AppCompatActivity() {
             isRevealed = isSongRevealed,
             isPaused = isSongPaused,
             players = allPlayers,
-            gameStarted = true
+            gameStarted = true,
+            // Playlist progress tracking
+            totalTracks = gamePlaylistTotalTracks,
+            seenTrackUris = seenTrackUris.toSet()
         )
         
         val message = MultiplayerMessage.GameStateUpdate(
@@ -596,12 +656,33 @@ class MultiplayerGameActivity : AppCompatActivity() {
         // Update buzzer button state
         buzzerButton.isEnabled = roundActive && !buzzerPressed
         buzzerButton.alpha = if (buzzerButton.isEnabled) 1.0f else 0.5f
+
+        // Show progress during playing/spinning state
+        updateProgressDisplay()
+    }
+
+    private fun updateProgressDisplay() {
+        try {
+            if (gamePlaylistTotalTracks > 0 && !isSongRevealed) {
+                playlistProgressText.text = "${seenTrackUris.size} / $gamePlaylistTotalTracks"
+                playlistProgressText.visibility = View.VISIBLE
+            } else if (isSongRevealed) {
+                playlistProgressText.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating progress display", e)
+        }
+    }
+
+    private fun resetProgressTracking() {
+        seenTrackUris.clear()
+        gamePlaylistTotalTracks = 0
     }
 
     // Spotify-related helper methods (adapted from GameActivity)
     private fun startSong() {
         if (!isHost) return
-        
+
         try {
             if (isSongPaused) {
                 spotifyAppRemote?.playerApi?.resume()
@@ -612,6 +693,17 @@ class MultiplayerGameActivity : AppCompatActivity() {
             startSpinningAnimation()
             startPausePulse()
             startProgressBarUpdateSafe()
+
+            // Track song progress for playlist tracking (host only)
+            currentTrack?.let { track ->
+                if (isHost && track.uri != null) {
+                    val wasNew = seenTrackUris.add(track.uri)
+                    if (wasNew) {
+                        Log.d(TAG, "New song: ${track.name} (${seenTrackUris.size})/${gamePlaylistTotalTracks}")
+                        broadcastGameStateUpdate() // Propagate progress to clients
+                    }
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error starting song", e)
         }

@@ -10,26 +10,36 @@ import java.net.SocketException
 import java.nio.charset.StandardCharsets
 
 /**
- * Handles network communication between devices in multiplayer mode
+ * Handles TCP network communication between devices in multiplayer mode.
+ * @param socket The active TCP socket connection
+ * @param peerId Unique identifier for this peer (used for disconnect tracking)
+ * @param onMessageReceived Callback when a message arrives from the connected peer
  */
 class MultiplayerNetworkManager(
     private val socket: Socket,
+    private val peerId: String,
     private val onMessageReceived: (MultiplayerMessage) -> Unit
 ) {
     companion object {
         private const val TAG = "MultiplayerNetwork"
         private const val MESSAGE_DELIMITER = "\n"
+        private const val HEARTBEAT_TIMEOUT = 35_000L // 35s without read activity = dead connection
     }
-    
+
     private val gson = Gson()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var inputStream: BufferedReader? = null
     private var outputStream: PrintWriter? = null
     private var isRunning = true
-    
+    private var lastReadTime = System.currentTimeMillis()
+
     init {
         initializeStreams()
         startListening()
+    }
+
+    fun isConnected(): Boolean {
+        return !socket.isClosed && socket.isConnected && isRunning
     }
     
     private fun initializeStreams() {
@@ -83,8 +93,10 @@ class MultiplayerNetworkManager(
     }
     
     private fun handleReceivedMessage(messageJson: String) {
+        lastReadTime = System.currentTimeMillis() // Refresh heartbeat timer on any read activity
+
         try {
-            Log.d(TAG, "Received message: $messageJson")
+            Log.d(TAG, "Received message from $peerId: $messageJson")
             val message = deserializeMessage(messageJson)
             if (message != null) {
                 onMessageReceived(message)
@@ -138,6 +150,7 @@ class MultiplayerNetworkManager(
                 "SongRevealed" -> gson.fromJson(wrapper.data, MultiplayerMessage.SongRevealed::class.java)
                 "NextSong" -> gson.fromJson(wrapper.data, MultiplayerMessage.NextSong::class.java)
                 "GameStarted" -> gson.fromJson(wrapper.data, MultiplayerMessage.GameStarted::class.java)
+                "RoundTimeout" -> gson.fromJson(wrapper.data, MultiplayerMessage.RoundTimeout::class.java)
                 else -> {
                     Log.w(TAG, "Unknown message type: ${wrapper.type}")
                     null
@@ -154,25 +167,21 @@ class MultiplayerNetworkManager(
     
     fun disconnect() {
         isRunning = false
-        
+
         scope.launch {
             try {
                 inputStream?.close()
                 outputStream?.close()
                 socket.close()
-                Log.d(TAG, "Network connection closed")
+                Log.d(TAG, "Network connection for $peerId closed")
             } catch (e: Exception) {
                 Log.e(TAG, "Error closing network connection", e)
             }
         }
-        
+
         scope.cancel()
     }
-    
-    fun isConnected(): Boolean {
-        return !socket.isClosed && socket.isConnected && isRunning
-    }
-    
+
     /**
      * Wrapper class for message serialization
      */

@@ -28,7 +28,10 @@ data class GameState(
     val progressMs: Long = 0L,
     val durationMs: Long = 0L,
     val players: List<MultiplayerPlayer> = emptyList(),
-    val gameStarted: Boolean = false
+    val gameStarted: Boolean = false,
+    // New: playlist progress tracking
+    val totalTracks: Int = 0,
+    val seenTrackUris: Set<String> = emptySet()
 ) : Parcelable
 
 /**
@@ -83,6 +86,11 @@ sealed class MultiplayerMessage {
         override val timestamp: Long,
         override val senderId: String,
         val playlistId: String
+    ) : MultiplayerMessage()
+
+    data class RoundTimeout(
+        override val timestamp: Long,
+        override val senderId: String
     ) : MultiplayerMessage()
 }
 

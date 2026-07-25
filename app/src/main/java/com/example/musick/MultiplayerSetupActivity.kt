@@ -350,14 +350,26 @@ class MultiplayerSetupActivity : AppCompatActivity() {
                         startMultiplayerGame(message.playlistId)
                     }
                 }
-                
+
+                is MultiplayerMessage.PlayerLeft -> {
+                    // Remove disconnected player from list
+                    connectedPlayers.removeAll { it.id == message.senderId }
+                    playersAdapter.notifyDataSetChanged()
+                    statusText.text = if (playersCard.visibility == View.VISIBLE) {
+                        "Player left the game (${connectedPlayers.size} remaining)"
+                    } else {
+                        "Connection lost"
+                    }
+                    updateUI()
+                }
+
                 else -> {
                     Log.d(TAG, "Unhandled message type: ${message.javaClass.simpleName}")
                 }
             }
         }
     }
-    
+
     private fun startMultiplayerGame(playlistIdOverride: String? = null) {
         val gamePlaylistId = playlistIdOverride ?: playlistId
         
@@ -416,6 +428,16 @@ class MultiplayerSetupActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
+        
+        // Broadcast PlayerLeft before cleanup so host knows we're leaving
+        currentPlayer?.let { player ->
+            val leaveMessage = MultiplayerMessage.PlayerLeft(
+                timestamp = System.currentTimeMillis(),
+                senderId = player.id
+            )
+            wifiDirectManager.sendMessage(leaveMessage)
+        }
+        
         wifiDirectManager.cleanup()
     }
 }

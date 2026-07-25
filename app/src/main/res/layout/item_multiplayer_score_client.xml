@@ -1,57 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!-- item_multiplayer_score_client.xml — Read-only multiplayer score card. Used for non-host players -->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp">
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/surface_variant">
 
-    <!-- Player Name -->
-    <TextView
-        android:id="@+id/playerNameText"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Player Name"
-        android:textColor="@color/text_primary"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/hostIndicator" />
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
-    <!-- Host Indicator -->
-    <TextView
-        android:id="@+id/hostIndicator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="HOST"
-        android:textColor="@color/spotify_green"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:background="@drawable/chip_background"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
-        android:visibility="gone"
-        android:layout_marginEnd="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/scoreText" />
+        <!-- Player Name -->
+        <TextView
+            android:id="@+id/playerNameText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Player Name"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-    <!-- Score Display -->
-    <TextView
-        android:id="@+id/scoreText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0"
-        android:textColor="@color/text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:minWidth="48dp"
-        android:gravity="center"
-        android:background="@drawable/score_background"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <!-- Score -->
+        <TextView
+            android:id="@+id/scoreText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:minWidth="48dp"
+            android:gravity="center" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

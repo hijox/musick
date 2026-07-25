@@ -30,6 +30,8 @@ class WiFiDirectManager(private val context: Context) {
         private const val SERVICE_INSTANCE = "_musick"
         private const val SERVICE_REG_TYPE = "_presence._tcp"
         const val SERVER_PORT = 8888
+        private const val HEARTBEAT_INTERVAL_MS = 10_000L
+        private const val HEARTBEAT_TIMEOUT_MS = 35_000L
     }
     
     private val wifiP2pManager: WifiP2pManager? by lazy {
@@ -50,15 +52,22 @@ class WiFiDirectManager(private val context: Context) {
     private val _isHost = MutableStateFlow(false)
     val isHost: StateFlow<Boolean> = _isHost.asStateFlow()
     
-    // Network components
-    private var serverSocket: ServerSocket? = null
+    // Network components — single client (outgoing)
     private var clientSocket: Socket? = null
-    private var networkManager: MultiplayerNetworkManager? = null
+
+    // Multi-client support for host mode
+    private val networkManagers = mutableMapOf<String, MultiplayerNetworkManager>()
+    // Peer ID -> address mapping for disconnect tracking
+    private val peerAddresses = mutableMapOf<String, String>()
+
+    // For join-mode clients connecting TO host (single outgoing TCP)
+    private var _clientNetMgr: MultiplayerNetworkManager? = null
     
     // Callbacks
     var onDeviceConnected: ((String) -> Unit)? = null
     var onDeviceDisconnected: ((String) -> Unit)? = null
     var onMessageReceived: ((MultiplayerMessage) -> Unit)? = null
+    var onPlayerLeft: ((String) -> Unit)? = null
     
     fun initialize(): Boolean {
         return try {
@@ -190,15 +199,19 @@ class WiFiDirectManager(private val context: Context) {
         try {
             serverSocket = ServerSocket(SERVER_PORT)
             Log.d(TAG, "Server started on port $SERVER_PORT")
-            
+
             while (!serverSocket!!.isClosed) {
                 try {
                     val client = serverSocket!!.accept()
-                    Log.d(TAG, "Client connected: ${client.remoteSocketAddress}")
-                    
-                    // Handle client in separate coroutine
+                    val peerId = client.remoteSocketAddress.toString()
+                    Log.d(TAG, "Client connected: $peerId")
+
+                    // Register this connection as a new peer
+                    _discoveredDevices.value = _discoveredDevices.value + DiscoveredDevice("Client", peerId)
+
+                    // Handle client in separate coroutine with per-peer lifecycle
                     scope.launch(Dispatchers.IO) {
-                        handleClientConnection(client)
+                        handleClientConnection(client, peerId)
                     }
                 } catch (e: IOException) {
                     if (!serverSocket!!.isClosed) {
@@ -213,26 +226,78 @@ class WiFiDirectManager(private val context: Context) {
             }
         }
     }
-    
-    private suspend fun handleClientConnection(client: Socket) {
+
+    private suspend fun handleClientConnection(client: Socket, peerId: String) {
         try {
-            networkManager = MultiplayerNetworkManager(client) { message ->
+            // Track this connection for live disconnect detection
+            val mgr = MultiplayerNetworkManager(client, peerId) { message ->
                 onMessageReceived?.invoke(message)
             }
-            
+            networkManagers[peerId] = mgr
+            Log.d(TAG, "Registered connection #$peerId (${networkManagers.size} total)")
+
             withContext(Dispatchers.Main) {
                 _connectionStatus.value = ConnectionStatus.CONNECTED
-                onDeviceConnected?.invoke(client.remoteSocketAddress.toString())
+                onDeviceConnected?.invoke(peerId)
             }
-            
+
+            // Heartbeat: monitor connection health periodically
+            var lastActivity = System.currentTimeMillis()
+            while (!client.isClosed && serverSocket != null && !serverSocket!!.isClosed) {
+                delay(HEARTBEAT_INTERVAL_MS)
+                val now = System.currentTimeMillis()
+                if (now - lastActivity > HEARTBEAT_TIMEOUT_MS) {
+                    Log.w(TAG, "Peer $peerId heartbeat timeout")
+                    break
+                }
+                // Check activity from the network manager's state
+                if (!mgr.isConnected()) {
+                    Log.d(TAG, "Peer $peerId gracefully disconnected by peer")
+                    break
+                }
+            }
+
+            // Peer has left — clean up and notify
+            cleanupConnection(peerId)
+            withContext(Dispatchers.Main) {
+                onPlayerLeft?.invoke(peerId)
+            }
+
         } catch (e: Exception) {
-            Log.e(TAG, "Error handling client connection", e)
-            client.close()
+            Log.e(TAG, "Error handling client connection for $peerId", e)
+            cleanupConnection(peerId)
+            withContext(Dispatchers.Main) {
+                onPlayerLeft?.invoke(peerId)
+            }
         }
     }
     
     fun sendMessage(message: MultiplayerMessage) {
-        networkManager?.sendMessage(message)
+        // Broadcast to all network managers (host mode clients)
+        var connected = false
+        for ((peerId, mgr) in networkManagers.toList()) {
+            if (mgr.isConnected()) {
+                mgr.sendMessage(message)
+                connected = true
+            } else {
+                Log.w(TAG, "Network manager for $peerId no longer connected")
+                cleanupConnection(peerId)
+            }
+        }
+
+        // Also send to join-mode client TCP connection
+        _clientNetMgr?.let { mgr ->
+            if (mgr.isConnected()) {
+                mgr.sendMessage(message)
+                connected = true
+            } else {
+                _clientNetMgr = null
+            }
+        }
+
+        if (!connected) {
+            Log.w(TAG, "sendMessage called but no active connections")
+        }
     }
     
     fun disconnect() {
@@ -240,31 +305,33 @@ class WiFiDirectManager(private val context: Context) {
             scope.launch(Dispatchers.IO) {
                 serverSocket?.close()
                 clientSocket?.close()
-                networkManager?.disconnect()
             }
-            
+
+            // Clean up all active connections
+            cleanupAllConnections()
+
             wifiP2pManager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
                     Log.d(TAG, "Group removed successfully")
                 }
-                
+
                 override fun onFailure(reason: Int) {
                     Log.e(TAG, "Failed to remove group: $reason")
                 }
             })
-            
+
             _connectionStatus.value = ConnectionStatus.DISCONNECTED
             _isHost.value = false
             _discoveredDevices.value = emptyList()
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "Error during disconnect", e)
         }
     }
-    
+
     fun cleanup() {
         disconnect()
-        
+
         try {
             receiver?.let {
                 context.unregisterReceiver(it)
@@ -272,6 +339,25 @@ class WiFiDirectManager(private val context: Context) {
             scope.cancel()
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup", e)
+        }
+    }
+
+    /**
+     * Clean up a single peer's connection and notify listeners.
+     */
+    private fun cleanupConnection(peerId: String) {
+        networkManagers.remove(peerId)
+        _discoveredDevices.value = _discoveredDevices.value.filterNot { it.address == peerId }
+        _connectionStatus.value = if (networkManagers.isEmpty()) ConnectionStatus.DISCONNECTED else ConnectionStatus.HOST
+    }
+
+    /**
+     * Clean up all connections and notify listeners. Used when the host leaves.
+     */
+    private fun cleanupAllConnections() {
+        for ((peerId, mgr) in networkManagers.toList()) {
+            mgr.disconnect()
+            onPlayerLeft?.invoke(peerId)
         }
     }
     
@@ -326,16 +412,16 @@ class WiFiDirectManager(private val context: Context) {
         try {
             clientSocket = Socket(hostAddress, SERVER_PORT)
             
-            networkManager = MultiplayerNetworkManager(clientSocket!!) { message ->
+            _clientNetMgr = MultiplayerNetworkManager(clientSocket!!, "host-${clientSocket!!.remoteSocketAddress.toString()}") { message ->
                 onMessageReceived?.invoke(message)
             }
-            
+
             withContext(Dispatchers.Main) {
                 _connectionStatus.value = ConnectionStatus.CONNECTED
                 onDeviceConnected?.invoke(hostAddress)
             }
-            
-            Log.d(TAG, "Connected to host at $hostAddress")
+
+            Log.d(TAG, "Connected to host at $hostAddress via TCP")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to connect to host", e)
