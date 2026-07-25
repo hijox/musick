@@ -57,6 +57,10 @@ class WiFiDirectManager(private val context: Context) {
 
     // Multi-client support for host mode
     private val networkManagers = mutableMapOf<String, MultiplayerNetworkManager>()
+    
+    // Server socket for accepting incoming connections (host mode)
+    private var serverSocket: ServerSocket? = null
+    
     // Peer ID -> address mapping for disconnect tracking
     private val peerAddresses = mutableMapOf<String, String>()
 

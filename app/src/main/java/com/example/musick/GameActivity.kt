@@ -331,7 +331,7 @@ class GameActivity : AppCompatActivity() {
             currentTrack?.let { track ->
                 track.uri?.let { uri ->
                     if (seenTrackUris.add(uri)) {
-                        Log.d("GameActivity", "New song seen: ${track.name} [$uri] (${seenTrackUris.size) / $gamePlaylistTotalTracks)")
+                        Log.d("GameActivity", "New song seen: ${track.name} [$uri] (${seenTrackUris.size}/$gamePlaylistTotalTracks)")
                     }
                 }
             }
@@ -371,7 +371,8 @@ class GameActivity : AppCompatActivity() {
                         SpotifyManager.getAccessToken()!!,
                         id
                     )
-                    result onSuccess { response ->
+                    val response = result.getOrNull()
+                    if (response != null) {
                         gamePlaylistTotalTracks = response.tracks.total
                         Log.d("GameActivity", "Playlist has $gamePlaylistTotalTracks total tracks")
                         hideLoading()
@@ -1135,27 +1136,4 @@ class PlayerScoreAdapter(
     }
 
     override fun getItemCount() = scores.size
-}
-
-fun Context.vibrate(durationMillis: Long = 50) {
-    try {
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
-                vibratorManager.defaultVibrator.vibrate(vibrationEffect)
-            }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                val vibrationEffect = VibrationEffect.createOneShot(durationMillis, VibrationEffect.DEFAULT_AMPLITUDE)
-                vibrator.vibrate(vibrationEffect)
-            }
-            else -> {
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                vibrator.vibrate(durationMillis)
-            }
-        }
-    } catch (e: Exception) {
-        Log.e("VibrationExtension", "Error vibrating", e)
-    }
 }

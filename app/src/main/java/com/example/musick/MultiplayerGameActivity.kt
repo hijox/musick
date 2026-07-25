@@ -276,7 +276,7 @@ class MultiplayerGameActivity : AppCompatActivity() {
                     SpotifyManager.getAccessToken()!!,
                     playlistId
                 )
-                result onSuccess { response ->
+                result.getOrNull()?.let { response ->
                     gamePlaylistTotalTracks = response.tracks.total
                     Log.d(TAG, "Playlist has $gamePlaylistTotalTracks total tracks")
                 }
