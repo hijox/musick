@@ -49,6 +49,7 @@
                     android:id="@+id/songInfoCard"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:minHeight="140dp"
                     android:layout_marginTop="18dp"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="4dp"
@@ -60,9 +61,8 @@
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/songInfoLayout"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="12dp"
-                        android:minHeight="80dp">
+                        android:layout_height="0dp"
+                        android:paddingTop="8dp">
 
                         <TextView
                             android:id="@+id/guessSongText"
@@ -97,20 +97,20 @@
                         <TextView
                             android:id="@+id/songNameText"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="0dp"
                             android:textColor="@color/text_primary"
                             android:textSize="22sp"
                             android:textStyle="bold"
                             android:gravity="center"
-                            android:maxLines="2"
+                            android:maxLines="5"
                             android:ellipsize="end"
-                            android:minHeight="40dp"
                             app:autoSizeTextType="uniform"
-                            app:autoSizeMinTextSize="16sp"
-                            app:autoSizeMaxTextSize="24sp"
+                            app:autoSizeMinTextSize="14sp"
+                            app:autoSizeMaxTextSize="20sp"
                             app:autoSizeStepGranularity="2sp"
                             android:visibility="gone"
                             app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintBottom_toTopOf="@id/artistNameText"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             tools:text="Really Long Song Name That Might Wrap" />
@@ -118,12 +118,11 @@
                         <TextView
                             android:id="@+id/artistNameText"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_height="0dp"
                             android:textColor="@color/text_secondary"
                             android:textSize="18sp"
                             android:gravity="center"
-                            android:maxLines="1"
+                            android:maxLines="3"
                             android:ellipsize="end"
                             app:autoSizeTextType="uniform"
                             app:autoSizeMinTextSize="14sp"

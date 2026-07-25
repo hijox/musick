@@ -578,6 +578,7 @@ class GameActivity : AppCompatActivity() {
             runOnUiThread {
                 try {
                     guessSongText.visibility = View.GONE
+                    playlistProgressText.visibility = View.GONE
                     songNameText.apply {
                         text = track?.name ?: "Unknown Song"
                         visibility = View.VISIBLE
@@ -593,6 +594,7 @@ class GameActivity : AppCompatActivity() {
             }
         }
         isSongRevealed = true
+        playlistProgressText.visibility = View.GONE
         updateButtonStates()
     }
 
@@ -707,14 +709,42 @@ class GameActivity : AppCompatActivity() {
     private fun skipSong() {
         runOnUiThread {
             songProgressBar.progress = 0
+            playlistProgressText.visibility = View.GONE
         }
         isProgressBarUpdating = false
         mainHandler.removeCallbacksAndMessages(null)
 
+        // Capture the currently playing track before reset so it's properly counted even if skip
+        // happens during a timing gap (e.g. new track not ready yet, or startSong() sees null URI)
+        val skippedTrackUris = mutableListOf<String>()
+        try {
+            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { playerState ->
+                val playingTrack = playerState?.track
+                if (playingTrack != null && !isFinishing && !isDestroyed) {
+                    playingTrack.uri?.let { uri ->
+                        seenTrackUris.add(uri)
+                        Log.d("GameActivity", "Counted skipped track: ${playingTrack.name} [$uri] (${seenTrackUris.size}/$gamePlaylistTotalTracks)")
+                        skippedTrackUris.add(uri)
+                    }
+                }
+            }?.setErrorCallback { throwable ->
+                Log.e("GameActivity", "Error getting track info for skip counting", throwable)
+            }
+        } catch (e: Exception) {
+            Log.e("GameActivity", "Error capturing skipped track URI", e)
+        }
+
         resetForNewSong()
 
         try {
-            spotifyAppRemote?.playerApi?.skipNext()
+            spotifyAppRemote?.playerApi?.skipNext()?.setResultCallback {
+                // After skip completes, ensure the new track is counted in progress tracking.
+                // This covers the edge case where startSong() runs before getTrackInfosSafe
+                // below can add the track (e.g., rapid skip-to-play cycles).
+                updateButtonStates()
+            }?.setErrorCallback { error ->
+                Log.e("GameActivity", "Skip failed: ${error.message}")
+            }
 
             if (SettingsActivity.isRandomStartEnabled(this)) {
                 applyRandomStart()
@@ -770,6 +800,7 @@ class GameActivity : AppCompatActivity() {
         // IMMEDIATE progress bar reset - force UI update right now
         runOnUiThread {
             songProgressBar.progress = 0
+            playlistProgressText.visibility = View.GONE
         }
 
         // Stop all updates immediately

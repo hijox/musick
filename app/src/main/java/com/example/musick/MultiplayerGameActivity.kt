@@ -402,9 +402,10 @@ class MultiplayerGameActivity : AppCompatActivity() {
                         visibility = View.VISIBLE
                     }
                     isSongRevealed = true
+                    playlistProgressText.visibility = View.GONE
                     transformBuzzerToAlbumCover(albumCoverImageUri)
                     updateUI()
-                    
+
                     // Broadcast song reveal
                     val revealMessage = MultiplayerMessage.SongRevealed(
                         timestamp = System.currentTimeMillis(),
@@ -485,19 +486,20 @@ class MultiplayerGameActivity : AppCompatActivity() {
         buzzerPressed = false
         buzzerWinner = null
         currentRoundId = null
-        
+
         // Reset UI
         transformAlbumCoverToBuzzer()
         songNameText.visibility = View.GONE
         artistNameText.visibility = View.GONE
         buzzerStatusCard.visibility = View.GONE
         winnerCard.visibility = View.GONE
-        
-        // Reset progress bar
+
+        // Reset progress bar and playlist counter visibility
         runOnUiThread {
             songProgressBar.progress = 0
+            playlistProgressText.visibility = View.GONE
         }
-        
+
         updateUI()
     }
 
@@ -551,6 +553,7 @@ class MultiplayerGameActivity : AppCompatActivity() {
                             visibility = View.VISIBLE
                         }
                         isSongRevealed = true
+                        playlistProgressText.visibility = View.GONE
                         updateUI()
                     }
                 }
